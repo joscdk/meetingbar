@@ -28,6 +28,7 @@ type TrayManager struct {
 	// Menu items
 	titleItem        *systray.MenuItem
 	meetingItems     []*systray.MenuItem
+	staticItems      []*systray.MenuItem // Track static menu items for cleanup
 	refreshItem      *systray.MenuItem
 	settingsItem     *systray.MenuItem
 	quitItem         *systray.MenuItem
@@ -92,20 +93,27 @@ func (tm *TrayManager) addStaticMenuItems() {
 	// Quick Actions header
 	quickActionsHeader := systray.AddMenuItem("Quick Actions", "")
 	quickActionsHeader.Disable()
+	tm.staticItems = append(tm.staticItems, quickActionsHeader)
 	
 	// Quick actions section
 	tm.createItem = systray.AddMenuItem("➕ Create meeting", "Create a new meeting")
+	tm.staticItems = append(tm.staticItems, tm.createItem)
 	
 	// Actions section
 	tm.refreshItem = systray.AddMenuItem("🔄 Refresh", "Refresh calendar data")
+	tm.staticItems = append(tm.staticItems, tm.refreshItem)
+	
 	tm.settingsItem = systray.AddMenuItem("⚙️ Settings", "Open settings")
+	tm.staticItems = append(tm.staticItems, tm.settingsItem)
 	
 	// Rate app section (like MeetBar)
 	tm.rateItem = systray.AddMenuItem("⭐ Rate MeetingBar", "Help us improve by rating the app")
+	tm.staticItems = append(tm.staticItems, tm.rateItem)
 	
 	systray.AddSeparator()
 	
 	tm.quitItem = systray.AddMenuItem("Quit MeetingBar", "Quit MeetingBar")
+	tm.staticItems = append(tm.staticItems, tm.quitItem)
 }
 
 func (tm *TrayManager) createMeeting() {
@@ -222,6 +230,12 @@ func (tm *TrayManager) updateTrayDisplay() {
 		item.Hide()
 	}
 	tm.meetingItems = nil
+	
+	// Remove old static menu items
+	for _, item := range tm.staticItems {
+		item.Hide()
+	}
+	tm.staticItems = nil
 	
 	if len(tm.meetings) == 0 {
 		tm.updateTrayForNoMeetings()
@@ -419,6 +433,12 @@ func (tm *TrayManager) updateTrayForNoAccounts() {
 		item.Hide()
 	}
 	tm.meetingItems = nil
+	
+	// Clear old static items
+	for _, item := range tm.staticItems {
+		item.Hide()
+	}
+	tm.staticItems = nil
 	
 	item := systray.AddMenuItem("⚠️ No accounts configured", "Add a Google account in settings")
 	item.Disable()

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"time"
 
@@ -31,8 +30,6 @@ var (
 
 func init() {
 	oauth2Config = &oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		RedirectURL:  "http://localhost:8080/callback",
 		Scopes: []string{
 			CalendarScope,
@@ -47,7 +44,14 @@ func SetOAuth2Config(clientID, clientSecret string) {
 	oauth2Config.ClientSecret = clientSecret
 }
 
-func StartOAuth2Flow(ctx context.Context) (*config.Account, error) {
+func StartOAuth2Flow(ctx context.Context, cfg *config.Config) (*config.Account, error) {
+	// Update OAuth2 config with stored credentials
+	if cfg.OAuth2.ClientID == "" || cfg.OAuth2.ClientSecret == "" {
+		return nil, fmt.Errorf("OAuth2 credentials not configured. Please set them in settings first")
+	}
+	
+	oauth2Config.ClientID = cfg.OAuth2.ClientID
+	oauth2Config.ClientSecret = cfg.OAuth2.ClientSecret
 	// Generate state parameter for CSRF protection
 	state, err := generateState()
 	if err != nil {

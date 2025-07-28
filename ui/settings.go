@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os/exec"
 	"strings"
 
 	"meetingbar/calendar"
@@ -27,13 +28,18 @@ func NewSettingsManager(cfg *config.Config, ctx context.Context) *SettingsManage
 }
 
 func (sm *SettingsManager) ShowSettings() error {
-	// For now, we'll create a text-based settings dialog
-	// In a full implementation, this would be a proper GUI
+	// Check if zenity is available
+	if !sm.isZenityAvailable() {
+		log.Println("Zenity not found, using fallback settings display")
+		return sm.showSimpleSettings()
+	}
 	
 	for {
 		choice, err := sm.showMainMenu()
 		if err != nil {
-			return err
+			// If zenity fails, fall back to simple settings
+			log.Printf("Zenity error: %v, falling back to simple settings", err)
+			return sm.showSimpleSettings()
 		}
 		
 		switch choice {
@@ -302,16 +308,38 @@ func (sm *SettingsManager) manageGeneral() error {
 	return sm.config.Save()
 }
 
+func (sm *SettingsManager) isZenityAvailable() bool {
+	_, err := exec.LookPath("zenity")
+	return err == nil
+}
+
 // Simple settings dialog using text input (fallback when zenity is not available)
 func (sm *SettingsManager) showSimpleSettings() error {
-	fmt.Println("=== MeetingBar Settings ===")
+	fmt.Println("\n=== MeetingBar Settings ===")
 	fmt.Printf("Accounts: %d configured\n", len(sm.config.Accounts))
-	fmt.Printf("Enabled Calendars: %d\n", len(sm.config.EnabledCalendars))
-	fmt.Printf("Notifications: %t\n", sm.config.EnableNotifications)
-	fmt.Printf("Notification Time: %d minutes\n", sm.config.NotificationTime)
+	for i, account := range sm.config.Accounts {
+		fmt.Printf("  %d. %s (ID: %s)\n", i+1, account.Email, account.ID)
+	}
+	
+	fmt.Printf("\nEnabled Calendars: %d\n", len(sm.config.EnabledCalendars))
+	for i, calID := range sm.config.EnabledCalendars {
+		fmt.Printf("  %d. %s\n", i+1, calID)
+	}
+	
+	fmt.Printf("\nNotifications: %t\n", sm.config.EnableNotifications)
+	fmt.Printf("Notification Time: %d minutes before meeting\n", sm.config.NotificationTime)
 	fmt.Printf("Refresh Interval: %d minutes\n", sm.config.RefreshInterval)
 	fmt.Printf("Launch at Login: %t\n", sm.config.LaunchAtLogin)
-	fmt.Println("==========================")
+	
+	fmt.Println("\n=== Configuration Help ===")
+	fmt.Println("To add a Google account:")
+	fmt.Println("1. Set up Google OAuth2 credentials (see README.md)")
+	fmt.Println("2. Set environment variables:")
+	fmt.Println("   export GOOGLE_CLIENT_ID=\"your-client-id\"")
+	fmt.Println("   export GOOGLE_CLIENT_SECRET=\"your-client-secret\"")
+	fmt.Println("3. Install zenity for GUI settings: sudo apt install zenity")
+	fmt.Println("\nConfig file location: ~/.config/meetingbar/config.json")
+	fmt.Println("==========================\n")
 	
 	return nil
 }

@@ -10,13 +10,19 @@ import (
 )
 
 type Config struct {
-	Accounts          []Account `mapstructure:"accounts"`
-	EnabledCalendars  []string  `mapstructure:"enabled_calendars"`
-	RefreshInterval   int       `mapstructure:"refresh_interval"`   // minutes
-	NotificationTime  int       `mapstructure:"notification_time"`  // minutes before meeting
-	EnableNotifications bool    `mapstructure:"enable_notifications"`
-	LaunchAtLogin     bool      `mapstructure:"launch_at_login"`
-	Debug             bool      `mapstructure:"debug"`
+	Accounts            []Account `mapstructure:"accounts"`
+	EnabledCalendars    []string  `mapstructure:"enabled_calendars"`
+	RefreshInterval     int       `mapstructure:"refresh_interval"`   // minutes
+	NotificationTime    int       `mapstructure:"notification_time"`  // minutes before meeting
+	EnableNotifications bool      `mapstructure:"enable_notifications"`
+	LaunchAtLogin       bool      `mapstructure:"launch_at_login"`
+	Debug               bool      `mapstructure:"debug"`
+	OAuth2              OAuth2Config `mapstructure:"oauth2"`
+}
+
+type OAuth2Config struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 }
 
 type Account struct {
@@ -58,6 +64,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("debug", false)
 	viper.SetDefault("accounts", []Account{})
 	viper.SetDefault("enabled_calendars", []string{})
+	viper.SetDefault("oauth2", OAuth2Config{})
 	
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
@@ -90,6 +97,7 @@ func (c *Config) Save() error {
 	viper.Set("enable_notifications", c.EnableNotifications)
 	viper.Set("launch_at_login", c.LaunchAtLogin)
 	viper.Set("debug", c.Debug)
+	viper.Set("oauth2", c.OAuth2)
 	
 	return viper.WriteConfig()
 }

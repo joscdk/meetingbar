@@ -40,6 +40,22 @@ Menu:
 - Go 1.21+ (for building from source)
 - CGO enabled for system tray support
 
+### Optional Dependencies
+
+- **zenity**: For GUI settings dialog (recommended)
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install zenity
+  
+  # Fedora
+  sudo dnf install zenity
+  
+  # Arch
+  sudo pacman -S zenity
+  ```
+  
+  If zenity is not installed, MeetingBar will fall back to terminal-based settings display.
+
 ### From Release Package
 
 1. Download the latest release from GitHub releases
@@ -86,11 +102,7 @@ Before using MeetingBar, you need to configure Google OAuth2 credentials:
    - Application type: "Desktop application"
    - Download the JSON file
 
-5. Set environment variables or update the code with your credentials:
-   ```bash
-   export GOOGLE_CLIENT_ID="your-client-id"
-   export GOOGLE_CLIENT_SECRET="your-client-secret"
-   ```
+5. Note down your Client ID and Client Secret for use in MeetingBar settings
 
 ### First Run
 
@@ -100,9 +112,12 @@ Before using MeetingBar, you need to configure Google OAuth2 credentials:
    ```
 
 2. Right-click the tray icon and select "Settings"
-3. Click "Add Google Account" and complete the OAuth flow
-4. Select which calendars you want to monitor
-5. Configure notification preferences
+3. Configure OAuth2 credentials (option 1):
+   - Enter your Google OAuth2 Client ID and Secret
+4. Add Google Account (option 2):
+   - Complete the OAuth flow in your browser
+5. Select calendars to monitor (option 3)
+6. Configure notification preferences (option 4)
 
 ## Usage
 
@@ -135,6 +150,10 @@ Desktop notifications appear before meetings (configurable timing):
 
 ```json
 {
+  "oauth2": {
+    "client_id": "your-google-client-id",
+    "client_secret": "your-google-client-secret"
+  },
   "accounts": [
     {
       "id": "user-id",
@@ -211,16 +230,20 @@ MeetingBar automatically detects meeting links in:
    - Ensure your desktop environment supports system tray
    - Try restarting the desktop environment
 
-2. **OAuth2 authentication fails**:
+2. **Settings error: "zenity: executable not found"**:
+   - Install zenity: `sudo apt install zenity` (Ubuntu/Debian)
+   - Or use the fallback terminal-based settings display
+
+3. **OAuth2 authentication fails**:
    - Check client ID and secret configuration
    - Verify redirect URI is set to `http://localhost:8080/callback`
 
-3. **No meetings showing**:
+4. **No meetings showing**:
    - Check calendar permissions in Google account
    - Verify enabled calendars in settings
    - Check network connectivity
 
-4. **Notifications not working**:
+5. **Notifications not working**:
    - Ensure desktop notifications are enabled
    - Check notification daemon is running (`systemctl --user status dunst` or similar)
 

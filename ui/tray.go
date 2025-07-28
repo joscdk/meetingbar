@@ -176,10 +176,27 @@ func (tm *TrayManager) startPeriodicRefresh() {
 }
 
 func (tm *TrayManager) refreshMeetings() {
-	// Check backend requirements
+	log.Printf("refreshMeetings: backend=%s, requiresAuth=%t, accountCount=%d", 
+		tm.config.CalendarBackend, 
+		tm.calendarService.RequiresAuthentication(), 
+		len(tm.config.Accounts))
+		
+	// Check backend requirements - only show no accounts for Google backend
 	if tm.calendarService.RequiresAuthentication() && len(tm.config.Accounts) == 0 {
+		log.Printf("No accounts configured for backend that requires authentication")
 		tm.updateTrayForNoAccounts()
 		return
+	}
+	
+	// For GNOME backend, test connection before proceeding
+	if tm.calendarService.IsGnomeBackend() {
+		log.Printf("Testing GNOME Calendar connection...")
+		if err := tm.calendarService.TestConnection(); err != nil {
+			log.Printf("GNOME Calendar backend not available: %v", err)
+			tm.updateTrayForGnomeUnavailable()
+			return
+		}
+		log.Printf("GNOME Calendar connection successful")
 	}
 	
 	var allMeetings []calendar.Meeting
@@ -192,7 +209,10 @@ func (tm *TrayManager) refreshMeetings() {
 			calendars, err := tm.calendarService.GetCalendars("")
 			if err != nil {
 				log.Printf("Failed to get GNOME calendars: %v", err)
-				tm.updateTrayForNoAccounts()
+				// For GNOME backend, show error as no meetings instead of no accounts
+				tm.updateTrayForNoMeetings()
+				tm.meetings = []calendar.Meeting{}
+				tm.updateTrayDisplay()
 				return
 			}
 			for _, cal := range calendars {
@@ -207,7 +227,10 @@ func (tm *TrayManager) refreshMeetings() {
 		meetings, err := tm.calendarService.GetMeetings("", enabledCalendars)
 		if err != nil {
 			log.Printf("Failed to get meetings from GNOME Calendar: %v", err)
-			tm.updateTrayForNoAccounts()
+			// For GNOME backend, show error as no meetings instead of no accounts
+			tm.updateTrayForNoMeetings()
+			tm.meetings = []calendar.Meeting{}
+			tm.updateTrayDisplay()
 			return
 		}
 		allMeetings = meetings
@@ -485,6 +508,52 @@ func (tm *TrayManager) updateTrayForNoAccounts() {
 	}
 }
 
+func (tm *TrayManager) updateTrayForGnomeUnavailable() {
+	systray.SetTitle("MeetingBar")
+	systray.SetTooltip("MeetingBar - GNOME Calendar unavailable")
+	
+	// Hide all meeting slots first
+	for _, slot := range tm.meetingSlots {
+		slot.Hide()
+	}
+	
+	// Use first slot to show GNOME unavailable message
+	if len(tm.meetingSlots) > 0 {
+		tm.meetingSlots[0].SetTitle("⚠️ GNOME Calendar unavailable")
+		tm.meetingSlots[0].SetTooltip("Evolution Data Server is not running or accessible")
+		tm.meetingSlots[0].Disable()
+		tm.meetingSlots[0].Show()
+	}
+	
+	// Use second slot for suggestion
+	if len(tm.meetingSlots) > 1 {
+		tm.meetingSlots[1].SetTitle("💡 Try installing evolution-data-server")
+		tm.meetingSlots[1].SetTooltip("Install: sudo apt install evolution-data-server")
+		tm.meetingSlots[1].Disable()
+		tm.meetingSlots[1].Show()
+	}
+	
+	// Use third slot for settings link
+	if len(tm.meetingSlots) > 2 {
+		tm.meetingSlots[2].SetTitle("⚙️ Switch to Google Calendar")
+		tm.meetingSlots[2].SetTooltip("Change calendar backend in settings")
+		tm.meetingSlots[2].Enable()
+		tm.meetingSlots[2].Show()
+		
+		// Set up click handler for settings
+		go func() {
+			for {
+				select {
+				case <-tm.meetingSlots[2].ClickedCh:
+					go tm.openSettings()
+				case <-tm.ctx.Done():
+					return
+				}
+			}
+		}()
+	}
+}
+
 func (tm *TrayManager) updateTrayForNoMeetings() {
 	systray.SetTitle("MeetingBar")
 	systray.SetTooltip("MeetingBar - No meetings today")
@@ -584,9 +653,16 @@ func (tm *TrayManager) openSettings() {
 		if err := tm.settingsMgr.ShowSettings(); err != nil {
 			log.Printf("Settings error: %v", err)
 		}
+		// Reload the calendar service in case backend changed
+		tm.reloadCalendarService()
 		// Refresh meetings after settings might have changed
 		tm.refreshMeetings()
 	}()
+}
+
+func (tm *TrayManager) reloadCalendarService() {
+	log.Printf("Reloading calendar service with backend: %s", tm.config.CalendarBackend)
+	tm.calendarService = calendar.NewUnifiedCalendarService(tm.ctx, tm.config)
 }
 
 func (tm *TrayManager) cleanup() {

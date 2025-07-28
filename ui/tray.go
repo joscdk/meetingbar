@@ -33,7 +33,11 @@ type TrayManager struct {
 	quitItem          *systray.MenuItem
 	createItem        *systray.MenuItem
 	rateItem          *systray.MenuItem
-	staticMenuCreated bool
+	quickActionsHeader *systray.MenuItem
+	
+	// Pre-allocated meeting items to maintain order
+	maxMeetingSlots   int
+	meetingSlots      []*systray.MenuItem
 }
 
 var trayManager *TrayManager
@@ -84,30 +88,31 @@ func (tm *TrayManager) setupMenuStructure() {
 	
 	systray.AddSeparator()
 	
-	// Meetings will be added here dynamically in updateTrayDisplay()
-}
-
-func (tm *TrayManager) addStaticMenuItems() {
+	// Pre-create meeting slots to maintain proper order
+	tm.maxMeetingSlots = 10 // Allow up to 10 meetings to be displayed
+	tm.meetingSlots = make([]*systray.MenuItem, tm.maxMeetingSlots)
+	for i := 0; i < tm.maxMeetingSlots; i++ {
+		item := systray.AddMenuItem("", "")
+		item.Hide() // Hide by default
+		tm.meetingSlots[i] = item
+	}
+	
+	// Create static menu items in correct order
 	systray.AddSeparator()
 	
-	// Quick Actions header
-	quickActionsHeader := systray.AddMenuItem("Quick Actions", "")
-	quickActionsHeader.Disable()
+	tm.quickActionsHeader = systray.AddMenuItem("Quick Actions", "")
+	tm.quickActionsHeader.Disable()
 	
-	// Quick actions section
 	tm.createItem = systray.AddMenuItem("➕ Create meeting", "Create a new meeting")
-	
-	// Actions section
 	tm.refreshItem = systray.AddMenuItem("🔄 Refresh", "Refresh calendar data")
 	tm.settingsItem = systray.AddMenuItem("⚙️ Settings", "Open settings")
-	
-	// Rate app section (like MeetBar)
 	tm.rateItem = systray.AddMenuItem("⭐ Rate MeetingBar", "Help us improve by rating the app")
 	
 	systray.AddSeparator()
 	
 	tm.quitItem = systray.AddMenuItem("Quit MeetingBar", "Quit MeetingBar")
 }
+
 
 func (tm *TrayManager) createMeeting() {
 	// Open Google Calendar create meeting URL
@@ -218,20 +223,14 @@ func (tm *TrayManager) refreshMeetings() {
 func (tm *TrayManager) updateTrayDisplay() {
 	now := time.Now()
 	
-	// Remove old meeting menu items
-	for _, item := range tm.meetingItems {
-		item.Hide()
+	// Hide all meeting slots first
+	for _, slot := range tm.meetingSlots {
+		slot.Hide()
 	}
-	tm.meetingItems = nil
 	
 	if len(tm.meetings) == 0 {
 		tm.updateTrayForNoMeetings()
-		tm.addNoMeetingsDisplay()
-		// Add static menu items only once
-		if !tm.staticMenuCreated {
-			tm.addStaticMenuItems()
-			tm.staticMenuCreated = true
-		}
+		tm.displayNoMeetingsInSlots()
 		return
 	}
 	
@@ -257,102 +256,92 @@ func (tm *TrayManager) updateTrayDisplay() {
 		tm.updateTrayForNoMeetings()
 	}
 	
-	// Add enhanced meeting display
-	tm.addEnhancedMeetingDisplay(currentMeeting, upcomingMeetings, now)
+	// Display meetings in pre-allocated slots
+	tm.displayMeetingsInSlots(currentMeeting, upcomingMeetings, now)
+}
+
+func (tm *TrayManager) displayNoMeetingsInSlots() {
+	// Use first slot to show no meetings message
+	if len(tm.meetingSlots) > 0 {
+		tm.meetingSlots[0].SetTitle("🌅    No meetings today")
+		tm.meetingSlots[0].SetTooltip("Enjoy your free time!")
+		tm.meetingSlots[0].Disable()
+		tm.meetingSlots[0].Show()
+	}
 	
-	// Add static menu items only once
-	if !tm.staticMenuCreated {
-		tm.addStaticMenuItems()
-		tm.staticMenuCreated = true
+	// Use second slot for helpful info
+	if len(tm.meetingSlots) > 1 {
+		tm.meetingSlots[1].SetTitle("ℹ️    Refresh to check for new meetings")
+		tm.meetingSlots[1].SetTooltip("Click refresh or wait for automatic update")
+		tm.meetingSlots[1].Disable()
+		tm.meetingSlots[1].Show()
 	}
 }
 
-func (tm *TrayManager) addNoMeetingsDisplay() {
-	// Show a friendly no meetings message similar to MeetBar
-	item := systray.AddMenuItem("🌅    No meetings today", "Enjoy your free time!")
-	item.Disable()
-	tm.meetingItems = append(tm.meetingItems, item)
+func (tm *TrayManager) displayMeetingsInSlots(currentMeeting *calendar.Meeting, upcomingMeetings []calendar.Meeting, now time.Time) {
+	slotIndex := 0
 	
-	// Add some helpful info
-	infoItem := systray.AddMenuItem("ℹ️    Refresh to check for new meetings", "Click refresh or wait for automatic update")
-	infoItem.Disable()
-	tm.meetingItems = append(tm.meetingItems, infoItem)
-}
-
-func (tm *TrayManager) addEnhancedMeetingDisplay(currentMeeting *calendar.Meeting, upcomingMeetings []calendar.Meeting, now time.Time) {
-	// Current meeting section
-	if currentMeeting != nil {
-		tm.addCurrentMeetingSection(currentMeeting, now)
+	// Display current meeting first
+	if currentMeeting != nil && slotIndex < len(tm.meetingSlots) {
+		timeLeft := currentMeeting.EndTime.Sub(now)
+		startTime := currentMeeting.StartTime.Format("15:04")
+		endTime := currentMeeting.EndTime.Format("15:04")
+		
+		title := fmt.Sprintf("🔴 %s    %s    %s",
+			startTime,
+			endTime,
+			tm.truncateTitle(currentMeeting.Title))
+		
+		tooltip := fmt.Sprintf("🔴 LIVE NOW: %s\n⏰ Started: %s\n⏱ Ends: %s\n⌛ %s remaining", 
+			currentMeeting.Title,
+			startTime,
+			endTime,
+			formatDuration(timeLeft))
+		
+		// Add meeting location if available
+		if currentMeeting.MeetingLink != nil {
+			tooltip += fmt.Sprintf("\n🔗 %s meeting", currentMeeting.MeetingLink.Type)
+		}
+		
+		tm.meetingSlots[slotIndex].SetTitle(title)
+		tm.meetingSlots[slotIndex].SetTooltip(tooltip)
+		tm.meetingSlots[slotIndex].Enable()
+		tm.meetingSlots[slotIndex].Show()
+		
+		// Set up click handler for this slot
+		go tm.handleMeetingSlotClick(tm.meetingSlots[slotIndex], currentMeeting)
+		
+		slotIndex++
 	}
 	
-	// Upcoming meetings section
-	if len(upcomingMeetings) > 0 {
-		tm.addUpcomingMeetingsSection(upcomingMeetings, now)
-	}
-}
-
-func (tm *TrayManager) addCurrentMeetingSection(meeting *calendar.Meeting, now time.Time) {
-	timeLeft := meeting.EndTime.Sub(now)
-	startTime := meeting.StartTime.Format("15:04")
-	endTime := meeting.EndTime.Format("15:04")
-	
-	// Green dot indicator for current meeting (like MeetBar)
-	
-	// MeetBar-style format with LIVE indicator
-	title := fmt.Sprintf("🔴 %s    %s    %s",
-		startTime,
-		endTime,
-		tm.truncateTitle(meeting.Title))
-	
-	tooltip := fmt.Sprintf("🔴 LIVE NOW: %s\n⏰ Started: %s\n⏱ Ends: %s\n⌛ %s remaining", 
-		meeting.Title,
-		startTime,
-		endTime,
-		formatDuration(timeLeft))
-	
-	// Add meeting location if available
-	if meeting.MeetingLink != nil {
-		tooltip += fmt.Sprintf("\n🔗 %s meeting", meeting.MeetingLink.Type)
-	}
-	
-	item := systray.AddMenuItem(title, tooltip)
-	tm.meetingItems = append(tm.meetingItems, item)
-	go tm.handleMeetingClick(item, meeting)
-	
-	// Add a separator after current meeting
-	separator := systray.AddMenuItem("──────────────────────────────", "")
-	separator.Disable()
-	tm.meetingItems = append(tm.meetingItems, separator)
-}
-
-func (tm *TrayManager) addUpcomingMeetingsSection(meetings []calendar.Meeting, now time.Time) {
-	// Limit display
+	// Display upcoming meetings
 	maxMeetings := tm.config.MaxMeetings
 	if maxMeetings <= 0 {
 		maxMeetings = 5
 	}
 	
-	displayMeetings := meetings
+	displayMeetings := upcomingMeetings
 	if len(displayMeetings) > maxMeetings {
 		displayMeetings = displayMeetings[:maxMeetings]
 	}
 	
 	for _, meeting := range displayMeetings {
+		if slotIndex >= len(tm.meetingSlots) {
+			break // No more slots available
+		}
+		
 		timeUntil := meeting.StartTime.Sub(now)
 		startTime := meeting.StartTime.Format("15:04")
 		endTime := meeting.EndTime.Format("15:04")
 		duration := meeting.EndTime.Sub(meeting.StartTime)
 		
-		// Meeting link indicator (green dot like MeetBar)
+		// Meeting link indicator
 		linkIcon := "🟢" // Green dot for meetings with video links
 		if meeting.MeetingLink == nil {
 			linkIcon = "⚪️" // White dot for meetings without links
 		}
 		
-		// Format similar to MeetBar: "09:15    09:30    Platform Services - Standup"
-		var title string
 		var prefix string
-		
 		if timeUntil < time.Minute {
 			prefix = "🔴" // Red indicator for starting now
 		} else if timeUntil < 5*time.Minute {
@@ -361,14 +350,12 @@ func (tm *TrayManager) addUpcomingMeetingsSection(meetings []calendar.Meeting, n
 			prefix = linkIcon // Use link indicator for normal meetings
 		}
 		
-		// Create MeetBar-style format
-		title = fmt.Sprintf("%s %s    %s    %s",
+		title := fmt.Sprintf("%s %s    %s    %s",
 			prefix,
 			startTime,
 			endTime,
 			tm.truncateTitle(meeting.Title))
 		
-		// Rich tooltip with all details
 		tooltip := fmt.Sprintf("%s\n⏰ %s - %s (Duration: %s)\n🕒 Starts in %s", 
 			meeting.Title,
 			startTime,
@@ -381,29 +368,40 @@ func (tm *TrayManager) addUpcomingMeetingsSection(meetings []calendar.Meeting, n
 			tooltip += fmt.Sprintf("\n🔗 %s", meeting.MeetingLink.Type)
 		}
 		
-		item := systray.AddMenuItem(title, tooltip)
-		tm.meetingItems = append(tm.meetingItems, item)
-		go tm.handleMeetingClick(item, &meeting)
+		tm.meetingSlots[slotIndex].SetTitle(title)
+		tm.meetingSlots[slotIndex].SetTooltip(tooltip)
+		tm.meetingSlots[slotIndex].Enable()
+		tm.meetingSlots[slotIndex].Show()
+		
+		// Set up click handler for this slot
+		meetingCopy := meeting // Create a copy for the closure
+		go tm.handleMeetingSlotClick(tm.meetingSlots[slotIndex], &meetingCopy)
+		
+		slotIndex++
 	}
 	
 	// Show "more meetings" if truncated
-	if len(meetings) > maxMeetings {
-		moreItem := systray.AddMenuItem(fmt.Sprintf("…    and %d more meetings", len(meetings)-maxMeetings), "Configure max meetings in settings")
-		moreItem.Disable()
-		tm.meetingItems = append(tm.meetingItems, moreItem)
+	if len(upcomingMeetings) > maxMeetings && slotIndex < len(tm.meetingSlots) {
+		tm.meetingSlots[slotIndex].SetTitle(fmt.Sprintf("…    and %d more meetings", len(upcomingMeetings)-maxMeetings))
+		tm.meetingSlots[slotIndex].SetTooltip("Configure max meetings in settings")
+		tm.meetingSlots[slotIndex].Disable()
+		tm.meetingSlots[slotIndex].Show()
 	}
 }
 
-func (tm *TrayManager) handleMeetingClick(item *systray.MenuItem, meeting *calendar.Meeting) {
+func (tm *TrayManager) handleMeetingSlotClick(slot *systray.MenuItem, meeting *calendar.Meeting) {
 	for {
 		select {
-		case <-item.ClickedCh:
+		case <-slot.ClickedCh:
 			tm.joinMeeting(meeting)
 		case <-tm.ctx.Done():
 			return
 		}
 	}
 }
+
+
+
 
 func (tm *TrayManager) joinMeeting(meeting *calendar.Meeting) {
 	if meeting.MeetingLink == nil {
@@ -422,33 +420,37 @@ func (tm *TrayManager) updateTrayForNoAccounts() {
 	systray.SetTitle("MeetingBar")
 	systray.SetTooltip("MeetingBar - No accounts configured")
 	
-	// Clear meetings and show account setup message
-	for _, item := range tm.meetingItems {
-		item.Hide()
+	// Hide all meeting slots first
+	for _, slot := range tm.meetingSlots {
+		slot.Hide()
 	}
-	tm.meetingItems = nil
 	
-	item := systray.AddMenuItem("⚠️ No accounts configured", "Add a Google account in settings")
-	item.Disable()
-	tm.meetingItems = append(tm.meetingItems, item)
+	// Use first slot to show no accounts message
+	if len(tm.meetingSlots) > 0 {
+		tm.meetingSlots[0].SetTitle("⚠️ No accounts configured")
+		tm.meetingSlots[0].SetTooltip("Add a Google account in settings")
+		tm.meetingSlots[0].Disable()
+		tm.meetingSlots[0].Show()
+	}
 	
-	setupItem := systray.AddMenuItem("⚙️ Open Settings to Add Account", "Configure your Google account")
-	tm.meetingItems = append(tm.meetingItems, setupItem)
-	go func() {
-		for {
-			select {
-			case <-setupItem.ClickedCh:
-				go tm.openSettings()
-			case <-tm.ctx.Done():
-				return
+	// Use second slot for setup link
+	if len(tm.meetingSlots) > 1 {
+		tm.meetingSlots[1].SetTitle("⚙️ Open Settings to Add Account")
+		tm.meetingSlots[1].SetTooltip("Configure your Google account")
+		tm.meetingSlots[1].Enable()
+		tm.meetingSlots[1].Show()
+		
+		// Set up click handler for settings
+		go func() {
+			for {
+				select {
+				case <-tm.meetingSlots[1].ClickedCh:
+					go tm.openSettings()
+				case <-tm.ctx.Done():
+					return
+				}
 			}
-		}
-	}()
-	
-	// Add static menu items only once
-	if !tm.staticMenuCreated {
-		tm.addStaticMenuItems()
-		tm.staticMenuCreated = true
+		}()
 	}
 }
 

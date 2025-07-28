@@ -22,7 +22,7 @@ type TrayManager struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	notificationMgr *NotificationManager
-	settingsMgr     *AdvancedSettingsManager
+	settingsMgr     *WebSettingsManager
 	
 	// Menu items
 	titleItem        *systray.MenuItem
@@ -43,7 +43,7 @@ func OnReady(cfg *config.Config) {
 		ctx:             ctx,
 		cancel:          cancel,
 		notificationMgr: NewNotificationManager(cfg),
-		settingsMgr:     NewAdvancedSettingsManager(cfg, ctx),
+		settingsMgr:     NewWebSettingsManager(cfg, ctx),
 	}
 	
 	trayManager.setupTray()

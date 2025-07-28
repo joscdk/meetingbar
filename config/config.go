@@ -10,14 +10,21 @@ import (
 )
 
 type Config struct {
-	Accounts            []Account `mapstructure:"accounts"`
-	EnabledCalendars    []string  `mapstructure:"enabled_calendars"`
-	RefreshInterval     int       `mapstructure:"refresh_interval"`   // minutes
-	NotificationTime    int       `mapstructure:"notification_time"`  // minutes before meeting
-	EnableNotifications bool      `mapstructure:"enable_notifications"`
-	LaunchAtLogin       bool      `mapstructure:"launch_at_login"`
-	Debug               bool      `mapstructure:"debug"`
-	OAuth2              OAuth2Config `mapstructure:"oauth2"`
+	Accounts                []Account    `mapstructure:"accounts"`
+	EnabledCalendars        []string     `mapstructure:"enabled_calendars"`
+	RefreshInterval         int          `mapstructure:"refresh_interval"` // minutes
+	NotificationTime        int          `mapstructure:"notification_time"` // minutes before meeting
+	EnableNotifications     bool         `mapstructure:"enable_notifications"`
+	ShowMeetingLinks        bool         `mapstructure:"show_meeting_links"`
+	PersistentNotifications bool         `mapstructure:"persistent_notifications"`
+	NotificationSound       bool         `mapstructure:"notification_sound"`
+	ShowDuration            bool         `mapstructure:"show_duration"`
+	MaxMeetings             int          `mapstructure:"max_meetings"`
+	StartWithSystem         bool         `mapstructure:"start_with_system"`
+	AutoRefreshStartup      bool         `mapstructure:"auto_refresh_startup"`
+	LaunchAtLogin           bool         `mapstructure:"launch_at_login"`
+	Debug                   bool         `mapstructure:"debug"`
+	OAuth2                  OAuth2Config `mapstructure:"oauth2"`
 }
 
 type OAuth2Config struct {
@@ -26,8 +33,9 @@ type OAuth2Config struct {
 }
 
 type Account struct {
-	ID    string `mapstructure:"id"`
-	Email string `mapstructure:"email"`
+	ID      string    `mapstructure:"id"`
+	Email   string    `mapstructure:"email"`
+	AddedAt time.Time `mapstructure:"added_at"`
 }
 
 type Calendar struct {
@@ -39,10 +47,17 @@ type Calendar struct {
 }
 
 const (
-	DefaultRefreshInterval   = 5  // minutes
-	DefaultNotificationTime  = 5  // minutes
-	DefaultEnableNotifications = true
-	DefaultLaunchAtLogin     = false
+	DefaultRefreshInterval          = 5     // minutes
+	DefaultNotificationTime         = 5     // minutes
+	DefaultEnableNotifications      = true
+	DefaultShowMeetingLinks         = true
+	DefaultPersistentNotifications  = false
+	DefaultNotificationSound        = true
+	DefaultShowDuration             = false
+	DefaultMaxMeetings              = 5
+	DefaultStartWithSystem          = false
+	DefaultAutoRefreshStartup       = true
+	DefaultLaunchAtLogin            = false
 )
 
 func Load() (*Config, error) {
@@ -60,6 +75,13 @@ func Load() (*Config, error) {
 	viper.SetDefault("refresh_interval", DefaultRefreshInterval)
 	viper.SetDefault("notification_time", DefaultNotificationTime)
 	viper.SetDefault("enable_notifications", DefaultEnableNotifications)
+	viper.SetDefault("show_meeting_links", DefaultShowMeetingLinks)
+	viper.SetDefault("persistent_notifications", DefaultPersistentNotifications)
+	viper.SetDefault("notification_sound", DefaultNotificationSound)
+	viper.SetDefault("show_duration", DefaultShowDuration)
+	viper.SetDefault("max_meetings", DefaultMaxMeetings)
+	viper.SetDefault("start_with_system", DefaultStartWithSystem)
+	viper.SetDefault("auto_refresh_startup", DefaultAutoRefreshStartup)
 	viper.SetDefault("launch_at_login", DefaultLaunchAtLogin)
 	viper.SetDefault("debug", false)
 	viper.SetDefault("accounts", []Account{})
@@ -95,6 +117,13 @@ func (c *Config) Save() error {
 	viper.Set("refresh_interval", c.RefreshInterval)
 	viper.Set("notification_time", c.NotificationTime)
 	viper.Set("enable_notifications", c.EnableNotifications)
+	viper.Set("show_meeting_links", c.ShowMeetingLinks)
+	viper.Set("persistent_notifications", c.PersistentNotifications)
+	viper.Set("notification_sound", c.NotificationSound)
+	viper.Set("show_duration", c.ShowDuration)
+	viper.Set("max_meetings", c.MaxMeetings)
+	viper.Set("start_with_system", c.StartWithSystem)
+	viper.Set("auto_refresh_startup", c.AutoRefreshStartup)
 	viper.Set("launch_at_login", c.LaunchAtLogin)
 	viper.Set("debug", c.Debug)
 	viper.Set("oauth2", c.OAuth2)
@@ -140,4 +169,25 @@ func EnsureCacheDir() error {
 		return err
 	}
 	return os.MkdirAll(cacheDir, 0755)
+}
+
+// NewConfig creates a new config with default values
+func NewConfig() *Config {
+	return &Config{
+		Accounts:                []Account{},
+		EnabledCalendars:        []string{},
+		RefreshInterval:         DefaultRefreshInterval,
+		NotificationTime:        DefaultNotificationTime,
+		EnableNotifications:     DefaultEnableNotifications,
+		ShowMeetingLinks:        DefaultShowMeetingLinks,
+		PersistentNotifications: DefaultPersistentNotifications,
+		NotificationSound:       DefaultNotificationSound,
+		ShowDuration:            DefaultShowDuration,
+		MaxMeetings:             DefaultMaxMeetings,
+		StartWithSystem:         DefaultStartWithSystem,
+		AutoRefreshStartup:      DefaultAutoRefreshStartup,
+		LaunchAtLogin:           DefaultLaunchAtLogin,
+		Debug:                   false,
+		OAuth2:                  OAuth2Config{},
+	}
 }

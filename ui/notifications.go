@@ -158,3 +158,9 @@ func (nm *NotificationManager) StartNotificationWatcher() {
 		}
 	}()
 }
+
+// ShowNotification sends a notification for a specific meeting (used for testing)
+func (nm *NotificationManager) ShowNotification(meeting *calendar.Meeting) error {
+	nm.sendMeetingNotification(meeting)
+	return nil
+}

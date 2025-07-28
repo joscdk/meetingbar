@@ -147,8 +147,9 @@ func exchangeCodeForAccount(ctx context.Context, code string) (*config.Account, 
 
 	// Create account
 	account := &config.Account{
-		ID:    userInfo.Id,
-		Email: userInfo.Email,
+		ID:      userInfo.Id,
+		Email:   userInfo.Email,
+		AddedAt: time.Now(),
 	}
 
 	// Store token securely

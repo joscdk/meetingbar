@@ -374,7 +374,7 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 	
 	// Get all calendars from all accounts
 	fmt.Println("🔄 Loading calendars...")
-	var allCalendars []config.Calendar
+	var allCalendars []calendar.CalendarInfo
 	for _, account := range sm.config.Accounts {
 		calendars, err := sm.calendarService.GetCalendars(account.ID)
 		if err != nil {
@@ -402,7 +402,7 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 				break
 			}
 		}
-		fmt.Printf("  %d. %s %s (%s)\n", i+1, enabled, cal.Name, cal.AccountID)
+		fmt.Printf("  %d. %s %s\n", i+1, enabled, cal.Summary)
 	}
 	
 	fmt.Println("\nChoose an option:")
@@ -432,7 +432,7 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 	sm.scanner.Scan()
 }
 
-func (sm *AdvancedSettingsManager) toggleCalendar(calendars []config.Calendar) {
+func (sm *AdvancedSettingsManager) toggleCalendar(calendars []calendar.CalendarInfo) {
 	fmt.Print("\nEnter calendar number to toggle: ")
 	if !sm.scanner.Scan() {
 		return
@@ -470,11 +470,11 @@ func (sm *AdvancedSettingsManager) toggleCalendar(calendars []config.Calendar) {
 		if enabled {
 			status = "disabled"
 		}
-		fmt.Printf("✅ Calendar '%s' %s!\n", cal.Name, status)
+		fmt.Printf("✅ Calendar '%s' %s!\n", cal.Summary, status)
 	}
 }
 
-func (sm *AdvancedSettingsManager) enableAllCalendars(calendars []config.Calendar) {
+func (sm *AdvancedSettingsManager) enableAllCalendars(calendars []calendar.CalendarInfo) {
 	sm.config.EnabledCalendars = nil
 	for _, cal := range calendars {
 		sm.config.EnabledCalendars = append(sm.config.EnabledCalendars, cal.ID)

@@ -42,3 +42,8 @@ func DeleteToken(accountID string) error {
 	key := TokenPrefix + accountID
 	return keyring.Delete(ServiceName, key)
 }
+
+// RemoveToken is an alias for DeleteToken for consistency
+func RemoveToken(accountID string) error {
+	return DeleteToken(accountID)
+}

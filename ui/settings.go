@@ -169,7 +169,7 @@ func (sm *SettingsManager) manageCalendars() error {
 	}
 	
 	// Get all calendars from all accounts
-	var allCalendars []config.Calendar
+	var allCalendars []calendar.CalendarInfo
 	for _, account := range sm.config.Accounts {
 		calendars, err := sm.calendarService.GetCalendars(account.ID)
 		if err != nil {
@@ -191,7 +191,7 @@ func (sm *SettingsManager) manageCalendars() error {
 	var selectedCalendars []string
 	
 	for _, cal := range allCalendars {
-		option := fmt.Sprintf("%s (%s)", cal.Name, cal.AccountID)
+		option := fmt.Sprintf("%s", cal.Summary)
 		calendarOptions = append(calendarOptions, option)
 		
 		// Check if calendar is enabled
@@ -219,7 +219,7 @@ func (sm *SettingsManager) manageCalendars() error {
 	sm.config.EnabledCalendars = nil
 	for _, selectedOption := range selected {
 		for _, cal := range allCalendars {
-			option := fmt.Sprintf("%s (%s)", cal.Name, cal.AccountID)
+			option := fmt.Sprintf("%s", cal.Summary)
 			if option == selectedOption {
 				sm.config.EnabledCalendars = append(sm.config.EnabledCalendars, cal.ID)
 				break

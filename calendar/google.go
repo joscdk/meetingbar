@@ -8,6 +8,7 @@ import (
 
 	"meetingbar/config"
 
+	"golang.org/x/oauth2"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
@@ -31,7 +32,14 @@ func NewGoogleCalendarService(ctx context.Context) *GoogleCalendarService {
 	return &GoogleCalendarService{ctx: ctx}
 }
 
-func (g *GoogleCalendarService) GetCalendars(accountID string) ([]config.Calendar, error) {
+type CalendarInfo struct {
+	ID              string `json:"id"`
+	Summary         string `json:"summary"`
+	Description     string `json:"description"`
+	BackgroundColor string `json:"backgroundColor"`
+}
+
+func (g *GoogleCalendarService) GetCalendars(accountID string) ([]CalendarInfo, error) {
 	client, err := GetClientForAccount(g.ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client for account: %w", err)
@@ -47,14 +55,13 @@ func (g *GoogleCalendarService) GetCalendars(accountID string) ([]config.Calenda
 		return nil, fmt.Errorf("failed to retrieve calendar list: %w", err)
 	}
 
-	var calendars []config.Calendar
+	var calendars []CalendarInfo
 	for _, item := range calendarList.Items {
-		calendars = append(calendars, config.Calendar{
-			ID:        item.Id,
-			Name:      item.Summary,
-			AccountID: accountID,
-			Enabled:   true, // Default to enabled
-			Color:     item.BackgroundColor,
+		calendars = append(calendars, CalendarInfo{
+			ID:              item.Id,
+			Summary:         item.Summary,
+			Description:     item.Description,
+			BackgroundColor: item.BackgroundColor,
 		})
 	}
 
@@ -198,4 +205,35 @@ func (g *GoogleCalendarService) GetAccountEmail(accountID string) (string, error
 	// This would require additional API call to get user info
 	// For now, return empty string and handle in UI
 	return "", nil
+}
+
+// GetAuthURL generates an OAuth2 authorization URL
+func (g *GoogleCalendarService) GetAuthURL() (string, error) {
+	// Load config to get OAuth2 credentials
+	cfg, err := config.Load()
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %w", err)
+	}
+	
+	if cfg.OAuth2.ClientID == "" || cfg.OAuth2.ClientSecret == "" {
+		return "", fmt.Errorf("OAuth2 credentials not configured")
+	}
+	
+	// Update global OAuth2 config
+	SetOAuth2Config(cfg.OAuth2.ClientID, cfg.OAuth2.ClientSecret)
+	
+	// Generate state for security
+	state, err := generateState()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate state: %w", err)
+	}
+	
+	// Generate authorization URL
+	authURL := oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOffline)
+	return authURL, nil
+}
+
+// RemoveAccount removes stored tokens for an account
+func (g *GoogleCalendarService) RemoveAccount(accountID string) error {
+	return config.RemoveToken(accountID)
 }

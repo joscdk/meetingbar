@@ -80,6 +80,7 @@ func (wsm *WebSettingsManager) ShowSettings() error {
 	mux.HandleFunc("/calendars", wsm.handleCalendarsPage)
 	mux.HandleFunc("/notifications", wsm.handleNotificationsPage)
 	mux.HandleFunc("/general", wsm.handleGeneralPage)
+	mux.HandleFunc("/oauth-success", wsm.handleOAuthSuccess)
 	
 	// API endpoints
 	mux.HandleFunc("/api/oauth2", wsm.handleOAuth2API)
@@ -994,7 +995,7 @@ func (wsm *WebSettingsManager) handleAccountsPage(w http.ResponseWriter, r *http
             {{if .OAuth2Set}}
             <div class="instructions">
                 <h4>📋 How it works:</h4>
-                <p>When you click "Add Google Account", you'll be redirected to Google's login page. After signing in and granting permissions, your account will be added to MeetingBar.</p>
+                <p>When you click "Add Google Account", you'll be redirected to Google's login page. After signing in and granting permissions, your account will be automatically added to MeetingBar. This may take a few moments to complete.</p>
             </div>
             {{end}}
         </div>
@@ -1003,6 +1004,10 @@ func (wsm *WebSettingsManager) handleAccountsPage(w http.ResponseWriter, r *http
     <script>
         async function addAccount() {
             try {
+                // Show loading state
+                document.querySelector('button[onclick="addAccount()"]').textContent = 'Starting authentication...';
+                document.querySelector('button[onclick="addAccount()"]').disabled = true;
+                
                 const response = await fetch('/api/add-account', {
                     method: 'POST'
                 });
@@ -1010,13 +1015,20 @@ func (wsm *WebSettingsManager) handleAccountsPage(w http.ResponseWriter, r *http
                 const result = await response.json();
                 
                 if (result.success && result.data && result.data.authUrl) {
+                    alert('ℹ️ You will be redirected to Google for authentication. After completing the process, please refresh this page to see your new account.');
                     // Open Google OAuth URL in current window
                     window.location.href = result.data.authUrl;
                 } else {
                     alert('❌ Error: ' + (result.message || 'Failed to start authentication'));
+                    // Reset button
+                    document.querySelector('button[onclick="addAccount()"]').textContent = '+ Add Google Account';
+                    document.querySelector('button[onclick="addAccount()"]').disabled = false;
                 }
             } catch (error) {
                 alert('❌ Error adding account: ' + error.message);
+                // Reset button
+                document.querySelector('button[onclick="addAccount()"]').textContent = '+ Add Google Account';
+                document.querySelector('button[onclick="addAccount()"]').disabled = false;
             }
         }
         
@@ -2488,7 +2500,25 @@ func (wsm *WebSettingsManager) handleAddAccountAPI(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Generate OAuth URL
+	// Start the full OAuth2 flow (this includes starting the callback server)
+	go func() {
+		account, err := calendar.StartOAuth2Flow(wsm.ctx, wsm.config)
+		if err != nil {
+			log.Printf("OAuth2 flow failed: %v", err)
+			return
+		}
+		
+		// Add account to config
+		wsm.config.Accounts = append(wsm.config.Accounts, *account)
+		if err := wsm.config.Save(); err != nil {
+			log.Printf("Failed to save config after adding account: %v", err)
+			return
+		}
+		
+		log.Printf("Successfully added account: %s", account.Email)
+	}()
+
+	// Generate OAuth URL for immediate redirect
 	authURL, err := wsm.calendarService.GetAuthURL()
 	if err != nil {
 		json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to generate auth URL: " + err.Error()})
@@ -2497,7 +2527,7 @@ func (wsm *WebSettingsManager) handleAddAccountAPI(w http.ResponseWriter, r *htt
 
 	json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
-		Message: "Authentication URL generated",
+		Message: "Authentication flow started",
 		Data: map[string]string{"authUrl": authURL},
 	})
 }
@@ -2673,4 +2703,36 @@ func (wsm *WebSettingsManager) getConfigJSON() string {
 		return "Error marshaling config: " + err.Error()
 	}
 	return string(configBytes)
+}
+
+func (wsm *WebSettingsManager) handleOAuthSuccess(w http.ResponseWriter, r *http.Request) {
+	tmpl := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Added - MeetingBar</title>
+    <style>
+        body { font-family: system-ui; text-align: center; padding: 50px; background: #f0f9ff; }
+        .success { background: #10b981; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .btn { background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="success">
+        <h2>✅ Account Added Successfully!</h2>
+        <p>Your Google account has been added to MeetingBar.</p>
+    </div>
+    <a href="/accounts" class="btn">Return to Accounts</a>
+    <script>
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            window.location.href = '/accounts';
+        }, 5000);
+    </script>
+</body>
+</html>`
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(tmpl))
 }

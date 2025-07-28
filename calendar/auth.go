@@ -63,33 +63,43 @@ func StartOAuth2Flow(ctx context.Context, cfg *config.Config) (*config.Account, 
 	errorChan := make(chan error, 1)
 
 	// Start HTTP server to handle OAuth callback
-	server := &http.Server{Addr: ":8080"}
+	mux := http.NewServeMux()
+	server := &http.Server{Addr: ":8080", Handler: mux}
 	
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("state") != state {
-			http.Error(w, "Invalid state parameter", http.StatusBadRequest)
-			errorChan <- fmt.Errorf("invalid state parameter")
-			return
+	// Add a root handler for debugging
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/callback" {
+			// Handle callback
+			if r.URL.Query().Get("state") != state {
+				http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+				errorChan <- fmt.Errorf("invalid state parameter")
+				return
+			}
+
+			code := r.URL.Query().Get("code")
+			if code == "" {
+				http.Error(w, "Authorization code not found", http.StatusBadRequest)
+				errorChan <- fmt.Errorf("authorization code not found")
+				return
+			}
+
+			// Redirect to success page in web settings
+			http.Redirect(w, r, "http://localhost:8765/oauth-success", http.StatusTemporaryRedirect)
+
+			codeChan <- code
+		} else {
+			// Handle other paths
+			fmt.Fprintf(w, `
+			<html>
+			<head><title>MeetingBar OAuth Server</title></head>
+			<body>
+				<h2>MeetingBar OAuth Server</h2>
+				<p>Server is running and waiting for OAuth callback...</p>
+				<p>If you're seeing this, the server is working correctly.</p>
+			</body>
+			</html>
+			`)
 		}
-
-		code := r.URL.Query().Get("code")
-		if code == "" {
-			http.Error(w, "Authorization code not found", http.StatusBadRequest)
-			errorChan <- fmt.Errorf("authorization code not found")
-			return
-		}
-
-		fmt.Fprintf(w, `
-		<html>
-		<head><title>MeetingBar Authorization</title></head>
-		<body>
-			<h2>Authorization successful!</h2>
-			<p>You can close this browser window and return to MeetingBar.</p>
-		</body>
-		</html>
-		`)
-
-		codeChan <- code
 	})
 
 	go func() {

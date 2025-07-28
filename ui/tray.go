@@ -26,13 +26,14 @@ type TrayManager struct {
 	settingsMgr     *WebSettingsManager
 	
 	// Menu items
-	titleItem        *systray.MenuItem
-	meetingItems     []*systray.MenuItem
-	refreshItem      *systray.MenuItem
-	settingsItem     *systray.MenuItem
-	quitItem         *systray.MenuItem
-	createItem       *systray.MenuItem
-	rateItem         *systray.MenuItem
+	titleItem         *systray.MenuItem
+	meetingItems      []*systray.MenuItem
+	refreshItem       *systray.MenuItem
+	settingsItem      *systray.MenuItem
+	quitItem          *systray.MenuItem
+	createItem        *systray.MenuItem
+	rateItem          *systray.MenuItem
+	staticMenuCreated bool
 }
 
 var trayManager *TrayManager
@@ -84,9 +85,6 @@ func (tm *TrayManager) setupMenuStructure() {
 	systray.AddSeparator()
 	
 	// Meetings will be added here dynamically in updateTrayDisplay()
-	
-	// Add static menu items once during setup
-	tm.addStaticMenuItems()
 }
 
 func (tm *TrayManager) addStaticMenuItems() {
@@ -229,6 +227,11 @@ func (tm *TrayManager) updateTrayDisplay() {
 	if len(tm.meetings) == 0 {
 		tm.updateTrayForNoMeetings()
 		tm.addNoMeetingsDisplay()
+		// Add static menu items only once
+		if !tm.staticMenuCreated {
+			tm.addStaticMenuItems()
+			tm.staticMenuCreated = true
+		}
 		return
 	}
 	
@@ -256,6 +259,12 @@ func (tm *TrayManager) updateTrayDisplay() {
 	
 	// Add enhanced meeting display
 	tm.addEnhancedMeetingDisplay(currentMeeting, upcomingMeetings, now)
+	
+	// Add static menu items only once
+	if !tm.staticMenuCreated {
+		tm.addStaticMenuItems()
+		tm.staticMenuCreated = true
+	}
 }
 
 func (tm *TrayManager) addNoMeetingsDisplay() {
@@ -436,6 +445,11 @@ func (tm *TrayManager) updateTrayForNoAccounts() {
 		}
 	}()
 	
+	// Add static menu items only once
+	if !tm.staticMenuCreated {
+		tm.addStaticMenuItems()
+		tm.staticMenuCreated = true
+	}
 }
 
 func (tm *TrayManager) updateTrayForNoMeetings() {

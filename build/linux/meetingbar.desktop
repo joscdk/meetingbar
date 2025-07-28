@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MeetingBar
+Comment=System tray application for managing Google Calendar meetings
+Exec=meetingbar
+Icon=meetingbar
+Terminal=false
+Categories=Office;Calendar;
+Keywords=calendar;meeting;google;tray;
+StartupNotify=false
+NoDisplay=false
+StartupWMClass=meetingbar

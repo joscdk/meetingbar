@@ -31,6 +31,8 @@ type TrayManager struct {
 	refreshItem      *systray.MenuItem
 	settingsItem     *systray.MenuItem
 	quitItem         *systray.MenuItem
+	createItem       *systray.MenuItem
+	rateItem         *systray.MenuItem
 }
 
 var trayManager *TrayManager
@@ -81,8 +83,10 @@ func (tm *TrayManager) setupMenuStructure() {
 	
 	systray.AddSeparator()
 	
-	// Meetings will be added here dynamically
-	
+	// Meetings will be added here dynamically in updateTrayDisplay()
+}
+
+func (tm *TrayManager) addStaticMenuItems() {
 	systray.AddSeparator()
 	
 	// Quick Actions header
@@ -90,35 +94,14 @@ func (tm *TrayManager) setupMenuStructure() {
 	quickActionsHeader.Disable()
 	
 	// Quick actions section
-	createItem := systray.AddMenuItem("➕ Create meeting", "Create a new meeting")
-	go func() {
-		for {
-			select {
-			case <-createItem.ClickedCh:
-				tm.createMeeting()
-			case <-tm.ctx.Done():
-				return
-			}
-		}
-	}()
+	tm.createItem = systray.AddMenuItem("➕ Create meeting", "Create a new meeting")
 	
 	// Actions section
 	tm.refreshItem = systray.AddMenuItem("🔄 Refresh", "Refresh calendar data")
 	tm.settingsItem = systray.AddMenuItem("⚙️ Settings", "Open settings")
 	
 	// Rate app section (like MeetBar)
-	rateItem := systray.AddMenuItem("⭐ Rate MeetingBar", "Help us improve by rating the app")
-	go func() {
-		for {
-			select {
-			case <-rateItem.ClickedCh:
-				// Open GitHub repo for feedback
-				exec.Command("xdg-open", "https://github.com/your-repo/meetingbar").Start()
-			case <-tm.ctx.Done():
-				return
-			}
-		}
-	}()
+	tm.rateItem = systray.AddMenuItem("⭐ Rate MeetingBar", "Help us improve by rating the app")
 	
 	systray.AddSeparator()
 	
@@ -136,19 +119,37 @@ func (tm *TrayManager) createMeeting() {
 
 func (tm *TrayManager) handleMenuClicks() {
 	for {
-		select {
-		case <-tm.refreshItem.ClickedCh:
-			go tm.refreshMeetings()
-			
-		case <-tm.settingsItem.ClickedCh:
-			go tm.openSettings()
-			
-		case <-tm.quitItem.ClickedCh:
-			systray.Quit()
-			return
-			
-		case <-tm.ctx.Done():
-			return
+		// Check if menu items exist before trying to read from their channels
+		if tm.createItem != nil && tm.refreshItem != nil && tm.settingsItem != nil && tm.rateItem != nil && tm.quitItem != nil {
+			select {
+			case <-tm.createItem.ClickedCh:
+				tm.createMeeting()
+				
+			case <-tm.refreshItem.ClickedCh:
+				go tm.refreshMeetings()
+				
+			case <-tm.settingsItem.ClickedCh:
+				go tm.openSettings()
+				
+			case <-tm.rateItem.ClickedCh:
+				// Open GitHub repo for feedback
+				exec.Command("xdg-open", "https://github.com/your-repo/meetingbar").Start()
+				
+			case <-tm.quitItem.ClickedCh:
+				systray.Quit()
+				return
+				
+			case <-tm.ctx.Done():
+				return
+			}
+		} else {
+			// Wait a bit before checking again if menu items aren't ready
+			select {
+			case <-tm.ctx.Done():
+				return
+			case <-time.After(100 * time.Millisecond):
+				continue
+			}
 		}
 	}
 }
@@ -225,6 +226,7 @@ func (tm *TrayManager) updateTrayDisplay() {
 	if len(tm.meetings) == 0 {
 		tm.updateTrayForNoMeetings()
 		tm.addNoMeetingsDisplay()
+		tm.addStaticMenuItems()
 		return
 	}
 	
@@ -252,6 +254,9 @@ func (tm *TrayManager) updateTrayDisplay() {
 	
 	// Add enhanced meeting display
 	tm.addEnhancedMeetingDisplay(currentMeeting, upcomingMeetings, now)
+	
+	// Add static menu items after meetings
+	tm.addStaticMenuItems()
 }
 
 func (tm *TrayManager) addNoMeetingsDisplay() {
@@ -431,6 +436,9 @@ func (tm *TrayManager) updateTrayForNoAccounts() {
 			}
 		}
 	}()
+	
+	// Add static menu items after no-accounts message
+	tm.addStaticMenuItems()
 }
 
 func (tm *TrayManager) updateTrayForNoMeetings() {

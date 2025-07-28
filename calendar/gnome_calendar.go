@@ -50,63 +50,70 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		}
 	}
 
-	// Access the Evolution Source Registry to get calendar sources
+	// Use the ObjectManager interface to get all managed objects
 	obj := g.conn.Object("org.gnome.evolution.dataserver.Sources5", "/org/gnome/evolution/dataserver/SourceManager")
 	
-	var sources []dbus.ObjectPath
-	err := obj.Call("org.gnome.evolution.dataserver.SourceManager.ListSources", 0, "").Store(&sources)
+	// Call GetManagedObjects to get all sources
+	var managedObjects map[dbus.ObjectPath]map[string]map[string]dbus.Variant
+	err := obj.Call("org.freedesktop.DBus.ObjectManager.GetManagedObjects", 0).Store(&managedObjects)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list calendar sources: %w", err)
+		return nil, fmt.Errorf("failed to get managed objects: %w", err)
 	}
 
+	log.Printf("Found %d managed objects from EDS", len(managedObjects))
+
 	var calendars []CalendarSource
-	for _, sourcePath := range sources {
-		sourceObj := g.conn.Object("org.gnome.evolution.dataserver.Sources5", sourcePath)
-		
-		// Get source properties
-		var displayName string
-		var enabled bool
-		var backend string
-		
-		// Get display name
-		if err := sourceObj.Call("org.freedesktop.DBus.Properties.Get", 0, 
-			"org.gnome.evolution.dataserver.Source", "DisplayName").Store(&displayName); err != nil {
-			log.Printf("Failed to get display name for source %s: %v", sourcePath, err)
+	for objectPath, interfaces := range managedObjects {
+		// Check if this object has a Source interface
+		sourceInterface, hasSource := interfaces["org.gnome.evolution.dataserver.Source"]
+		if !hasSource {
 			continue
 		}
 
-		// Get enabled status
-		if err := sourceObj.Call("org.freedesktop.DBus.Properties.Get", 0, 
-			"org.gnome.evolution.dataserver.Source", "Enabled").Store(&enabled); err != nil {
-			log.Printf("Failed to get enabled status for source %s: %v", sourcePath, err)
-			continue
-		}
-
-		// Check if this is a calendar source by looking for Calendar extension
-		var hasCalendarExt bool
-		if err := sourceObj.Call("org.gnome.evolution.dataserver.Source.HasExtension", 0, 
-			"Calendar").Store(&hasCalendarExt); err != nil {
-			continue
-		}
-
-		if !hasCalendarExt {
+		// Check if it has a Calendar extension
+		_, hasCalendar := interfaces["org.gnome.evolution.dataserver.Source.Calendar"]
+		if !hasCalendar {
 			continue // Skip non-calendar sources
 		}
+		
+		log.Printf("Found calendar source: %s", objectPath)
 
-		// Get backend type if available
-		backendCall := sourceObj.Call("org.freedesktop.DBus.Properties.Get", 0, 
-			"org.gnome.evolution.dataserver.Source.Calendar", "BackendName")
-		if backendCall.Err == nil {
-			backendCall.Store(&backend)
+		// Extract source properties
+		var displayName string
+		var enabled bool
+		
+		if displayNameVariant, ok := sourceInterface["DisplayName"]; ok {
+			if name, ok := displayNameVariant.Value().(string); ok {
+				displayName = name
+			}
+		}
+		
+		if enabledVariant, ok := sourceInterface["Enabled"]; ok {
+			if isEnabled, ok := enabledVariant.Value().(bool); ok {
+				enabled = isEnabled
+			}
 		}
 
-		calendars = append(calendars, CalendarSource{
-			ID:          string(sourcePath),
+		// Get backend type from Calendar extension if available
+		var backend string
+		if calendarInterface, hasCalendarExt := interfaces["org.gnome.evolution.dataserver.Source.Calendar"]; hasCalendarExt {
+			if backendVariant, ok := calendarInterface["BackendName"]; ok {
+				if backendName, ok := backendVariant.Value().(string); ok {
+					backend = backendName
+				}
+			}
+		}
+
+		calendar := CalendarSource{
+			ID:          string(objectPath),
 			DisplayName: displayName,
 			Enabled:     enabled,
 			Backend:     backend,
 			Color:       "#3366cc", // Default color, could be retrieved from EDS
-		})
+		}
+		
+		log.Printf("Adding calendar: %s (enabled: %t, backend: %s)", displayName, enabled, backend)
+		calendars = append(calendars, calendar)
 	}
 
 	return calendars, nil
@@ -141,8 +148,8 @@ func (g *GnomeCalendarService) GetMeetings(calendarIDs []string) ([]Meeting, err
 
 // getMeetingsFromCalendar retrieves events from a specific calendar
 func (g *GnomeCalendarService) getMeetingsFromCalendar(calendarID string, start, end time.Time) ([]Meeting, error) {
-	// Open calendar via Calendar Factory
-	factoryObj := g.conn.Object("org.gnome.evolution.dataserver.Calendar7", "/org/gnome/evolution/dataserver/CalendarFactory")
+	// Open calendar via Calendar Factory (using Calendar8 service)
+	factoryObj := g.conn.Object("org.gnome.evolution.dataserver.Calendar8", "/org/gnome/evolution/dataserver/CalendarFactory")
 	
 	var calendarPath dbus.ObjectPath
 	var busName string

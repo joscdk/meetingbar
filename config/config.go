@@ -20,6 +20,9 @@ type Config struct {
 	NotificationSound       bool         `mapstructure:"notification_sound"`
 	ShowDuration            bool         `mapstructure:"show_duration"`
 	MaxMeetings             int          `mapstructure:"max_meetings"`
+	MaxTitleLength          int          `mapstructure:"max_title_length"`
+	CurrentMeetingFormat    string       `mapstructure:"current_meeting_format"`
+	UpcomingMeetingFormat   string       `mapstructure:"upcoming_meeting_format"`
 	StartWithSystem         bool         `mapstructure:"start_with_system"`
 	AutoRefreshStartup      bool         `mapstructure:"auto_refresh_startup"`
 	LaunchAtLogin           bool         `mapstructure:"launch_at_login"`
@@ -55,6 +58,9 @@ const (
 	DefaultNotificationSound        = true
 	DefaultShowDuration             = false
 	DefaultMaxMeetings              = 5
+	DefaultMaxTitleLength           = 25
+	DefaultCurrentMeetingFormat     = "{title} {time_left} left"
+	DefaultUpcomingMeetingFormat    = "{title} in {time_until}"
 	DefaultStartWithSystem          = false
 	DefaultAutoRefreshStartup       = true
 	DefaultLaunchAtLogin            = false
@@ -80,6 +86,9 @@ func Load() (*Config, error) {
 	viper.SetDefault("notification_sound", DefaultNotificationSound)
 	viper.SetDefault("show_duration", DefaultShowDuration)
 	viper.SetDefault("max_meetings", DefaultMaxMeetings)
+	viper.SetDefault("max_title_length", DefaultMaxTitleLength)
+	viper.SetDefault("current_meeting_format", DefaultCurrentMeetingFormat)
+	viper.SetDefault("upcoming_meeting_format", DefaultUpcomingMeetingFormat)
 	viper.SetDefault("start_with_system", DefaultStartWithSystem)
 	viper.SetDefault("auto_refresh_startup", DefaultAutoRefreshStartup)
 	viper.SetDefault("launch_at_login", DefaultLaunchAtLogin)
@@ -122,13 +131,25 @@ func (c *Config) Save() error {
 	viper.Set("notification_sound", c.NotificationSound)
 	viper.Set("show_duration", c.ShowDuration)
 	viper.Set("max_meetings", c.MaxMeetings)
+	viper.Set("max_title_length", c.MaxTitleLength)
+	viper.Set("current_meeting_format", c.CurrentMeetingFormat)
+	viper.Set("upcoming_meeting_format", c.UpcomingMeetingFormat)
 	viper.Set("start_with_system", c.StartWithSystem)
 	viper.Set("auto_refresh_startup", c.AutoRefreshStartup)
 	viper.Set("launch_at_login", c.LaunchAtLogin)
 	viper.Set("debug", c.Debug)
 	viper.Set("oauth2", c.OAuth2)
 	
-	return viper.WriteConfig()
+	// Try to write config, if file doesn't exist use SafeWriteConfig
+	err := viper.WriteConfig()
+	if err != nil {
+		// If WriteConfig fails (likely because no config file exists), try SafeWriteConfig
+		err = viper.SafeWriteConfig()
+		if err != nil {
+			return fmt.Errorf("failed to write config file: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *Config) GetRefreshDuration() time.Duration {
@@ -184,6 +205,9 @@ func NewConfig() *Config {
 		NotificationSound:       DefaultNotificationSound,
 		ShowDuration:            DefaultShowDuration,
 		MaxMeetings:             DefaultMaxMeetings,
+		MaxTitleLength:          DefaultMaxTitleLength,
+		CurrentMeetingFormat:    DefaultCurrentMeetingFormat,
+		UpcomingMeetingFormat:   DefaultUpcomingMeetingFormat,
 		StartWithSystem:         DefaultStartWithSystem,
 		AutoRefreshStartup:      DefaultAutoRefreshStartup,
 		LaunchAtLogin:           DefaultLaunchAtLogin,

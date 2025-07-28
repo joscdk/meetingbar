@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"sort"
+	"strings"
 	"time"
 
 	"meetingbar/calendar"
@@ -59,26 +60,78 @@ func OnExit() {
 }
 
 func (tm *TrayManager) setupTray() {
-	// Set tray icon - for now, use a simple icon
+	// Set tray icon
 	systray.SetIcon(getDefaultIcon())
 	systray.SetTitle("MeetingBar")
 	systray.SetTooltip("MeetingBar - No meetings")
 	
 	// Create menu structure
-	tm.titleItem = systray.AddMenuItem("No meetings today", "No upcoming meetings")
+	tm.setupMenuStructure()
+	
+	// Handle menu clicks
+	go tm.handleMenuClicks()
+}
+
+func (tm *TrayManager) setupMenuStructure() {
+	// Today header with date
+	now := time.Now()
+	dateHeader := fmt.Sprintf("Today (%s):", now.Format("Mon, 2 Jan"))
+	tm.titleItem = systray.AddMenuItem(dateHeader, "Today's meetings")
 	tm.titleItem.Disable()
 	
 	systray.AddSeparator()
 	
-	tm.refreshItem = systray.AddMenuItem("Refresh", "Refresh calendar data")
-	tm.settingsItem = systray.AddMenuItem("Settings", "Open settings")
+	// Meetings will be added here dynamically
 	
 	systray.AddSeparator()
 	
-	tm.quitItem = systray.AddMenuItem("Quit", "Quit MeetingBar")
+	// Quick Actions header
+	quickActionsHeader := systray.AddMenuItem("Quick Actions", "")
+	quickActionsHeader.Disable()
 	
-	// Handle menu clicks
-	go tm.handleMenuClicks()
+	// Quick actions section
+	createItem := systray.AddMenuItem("➕ Create meeting", "Create a new meeting")
+	go func() {
+		for {
+			select {
+			case <-createItem.ClickedCh:
+				tm.createMeeting()
+			case <-tm.ctx.Done():
+				return
+			}
+		}
+	}()
+	
+	// Actions section
+	tm.refreshItem = systray.AddMenuItem("🔄 Refresh", "Refresh calendar data")
+	tm.settingsItem = systray.AddMenuItem("⚙️ Settings", "Open settings")
+	
+	// Rate app section (like MeetBar)
+	rateItem := systray.AddMenuItem("⭐ Rate MeetingBar", "Help us improve by rating the app")
+	go func() {
+		for {
+			select {
+			case <-rateItem.ClickedCh:
+				// Open GitHub repo for feedback
+				exec.Command("xdg-open", "https://github.com/your-repo/meetingbar").Start()
+			case <-tm.ctx.Done():
+				return
+			}
+		}
+	}()
+	
+	systray.AddSeparator()
+	
+	tm.quitItem = systray.AddMenuItem("Quit MeetingBar", "Quit MeetingBar")
+}
+
+func (tm *TrayManager) createMeeting() {
+	// Open Google Calendar create meeting URL
+	createMeetingURL := "https://calendar.google.com/calendar/u/0/r/eventedit"
+	err := exec.Command("xdg-open", createMeetingURL).Start()
+	if err != nil {
+		log.Printf("Failed to open create meeting URL: %v", err)
+	}
 }
 
 func (tm *TrayManager) handleMenuClicks() {
@@ -171,6 +224,7 @@ func (tm *TrayManager) updateTrayDisplay() {
 	
 	if len(tm.meetings) == 0 {
 		tm.updateTrayForNoMeetings()
+		tm.addNoMeetingsDisplay()
 		return
 	}
 	
@@ -196,49 +250,134 @@ func (tm *TrayManager) updateTrayDisplay() {
 		tm.updateTrayForNoMeetings()
 	}
 	
-	// Add meeting menu items (limit to 5)
-	displayMeetings := upcomingMeetings
-	if len(displayMeetings) > 5 {
-		displayMeetings = displayMeetings[:5]
-	}
+	// Add enhanced meeting display
+	tm.addEnhancedMeetingDisplay(currentMeeting, upcomingMeetings, now)
+}
+
+func (tm *TrayManager) addNoMeetingsDisplay() {
+	// Show a friendly no meetings message similar to MeetBar
+	item := systray.AddMenuItem("🌅    No meetings today", "Enjoy your free time!")
+	item.Disable()
+	tm.meetingItems = append(tm.meetingItems, item)
 	
+	// Add some helpful info
+	infoItem := systray.AddMenuItem("ℹ️    Refresh to check for new meetings", "Click refresh or wait for automatic update")
+	infoItem.Disable()
+	tm.meetingItems = append(tm.meetingItems, infoItem)
+}
+
+func (tm *TrayManager) addEnhancedMeetingDisplay(currentMeeting *calendar.Meeting, upcomingMeetings []calendar.Meeting, now time.Time) {
+	// Current meeting section
 	if currentMeeting != nil {
-		// Add current meeting at the top
-		item := systray.AddMenuItemCheckbox(
-			fmt.Sprintf("▶ %s (Now)", tm.truncateTitle(currentMeeting.Title)),
-			fmt.Sprintf("Currently in meeting: %s", currentMeeting.Title),
-			false,
-		)
-		tm.meetingItems = append(tm.meetingItems, item)
-		
-		// Handle clicks for current meeting
-		go tm.handleMeetingClick(item, currentMeeting)
+		tm.addCurrentMeetingSection(currentMeeting, now)
 	}
 	
-	for i := range displayMeetings {
-		meeting := &displayMeetings[i]
+	// Upcoming meetings section
+	if len(upcomingMeetings) > 0 {
+		tm.addUpcomingMeetingsSection(upcomingMeetings, now)
+	}
+}
+
+func (tm *TrayManager) addCurrentMeetingSection(meeting *calendar.Meeting, now time.Time) {
+	timeLeft := meeting.EndTime.Sub(now)
+	startTime := meeting.StartTime.Format("15:04")
+	endTime := meeting.EndTime.Format("15:04")
+	
+	// Green dot indicator for current meeting (like MeetBar)
+	
+	// MeetBar-style format with LIVE indicator
+	title := fmt.Sprintf("🔴 %s    %s    %s",
+		startTime,
+		endTime,
+		tm.truncateTitle(meeting.Title))
+	
+	tooltip := fmt.Sprintf("🔴 LIVE NOW: %s\n⏰ Started: %s\n⏱ Ends: %s\n⌛ %s remaining", 
+		meeting.Title,
+		startTime,
+		endTime,
+		formatDuration(timeLeft))
+	
+	// Add meeting location if available
+	if meeting.MeetingLink != nil {
+		tooltip += fmt.Sprintf("\n🔗 %s meeting", meeting.MeetingLink.Type)
+	}
+	
+	item := systray.AddMenuItem(title, tooltip)
+	tm.meetingItems = append(tm.meetingItems, item)
+	go tm.handleMeetingClick(item, meeting)
+	
+	// Add a separator after current meeting
+	separator := systray.AddMenuItem("──────────────────────────────", "")
+	separator.Disable()
+	tm.meetingItems = append(tm.meetingItems, separator)
+}
+
+func (tm *TrayManager) addUpcomingMeetingsSection(meetings []calendar.Meeting, now time.Time) {
+	// Limit display
+	maxMeetings := tm.config.MaxMeetings
+	if maxMeetings <= 0 {
+		maxMeetings = 5
+	}
+	
+	displayMeetings := meetings
+	if len(displayMeetings) > maxMeetings {
+		displayMeetings = displayMeetings[:maxMeetings]
+	}
+	
+	for _, meeting := range displayMeetings {
 		timeUntil := meeting.StartTime.Sub(now)
+		startTime := meeting.StartTime.Format("15:04")
+		endTime := meeting.EndTime.Format("15:04")
+		duration := meeting.EndTime.Sub(meeting.StartTime)
 		
-		var title string
-		if timeUntil < time.Minute {
-			title = fmt.Sprintf("📅 %s (Starting now)", tm.truncateTitle(meeting.Title))
-		} else if timeUntil < time.Hour {
-			minutes := int(timeUntil.Minutes())
-			title = fmt.Sprintf("📅 %s (%dm)", tm.truncateTitle(meeting.Title), minutes)
-		} else {
-			title = fmt.Sprintf("📅 %s (%s)", tm.truncateTitle(meeting.Title), meeting.StartTime.Format("15:04"))
+		// Meeting link indicator (green dot like MeetBar)
+		linkIcon := "🟢" // Green dot for meetings with video links
+		if meeting.MeetingLink == nil {
+			linkIcon = "⚪️" // White dot for meetings without links
 		}
 		
-		tooltip := fmt.Sprintf("%s\n%s - %s", 
+		// Format similar to MeetBar: "09:15    09:30    Platform Services - Standup"
+		var title string
+		var prefix string
+		
+		if timeUntil < time.Minute {
+			prefix = "🔴" // Red indicator for starting now
+		} else if timeUntil < 5*time.Minute {
+			prefix = "🟡" // Yellow indicator for very soon
+		} else {
+			prefix = linkIcon // Use link indicator for normal meetings
+		}
+		
+		// Create MeetBar-style format
+		title = fmt.Sprintf("%s %s    %s    %s",
+			prefix,
+			startTime,
+			endTime,
+			tm.truncateTitle(meeting.Title))
+		
+		// Rich tooltip with all details
+		tooltip := fmt.Sprintf("%s\n⏰ %s - %s (Duration: %s)\n🕒 Starts in %s", 
 			meeting.Title,
-			meeting.StartTime.Format("15:04"),
-			meeting.EndTime.Format("15:04"))
+			startTime,
+			endTime,
+			formatDuration(duration),
+			formatDuration(timeUntil))
+		
+		// Add meeting location if available
+		if meeting.MeetingLink != nil {
+			tooltip += fmt.Sprintf("\n🔗 %s", meeting.MeetingLink.Type)
+		}
 		
 		item := systray.AddMenuItem(title, tooltip)
 		tm.meetingItems = append(tm.meetingItems, item)
-		
-		// Handle clicks
-		go tm.handleMeetingClick(item, meeting)
+		go tm.handleMeetingClick(item, &meeting)
+	}
+	
+	// Show "more meetings" if truncated
+	if len(meetings) > maxMeetings {
+		moreItem := systray.AddMenuItem(fmt.Sprintf("…    and %d more meetings", len(meetings)-maxMeetings), "Configure max meetings in settings")
+		moreItem.Disable()
+		tm.meetingItems = append(tm.meetingItems, moreItem)
 	}
 }
 
@@ -269,20 +408,48 @@ func (tm *TrayManager) joinMeeting(meeting *calendar.Meeting) {
 func (tm *TrayManager) updateTrayForNoAccounts() {
 	systray.SetTitle("MeetingBar")
 	systray.SetTooltip("MeetingBar - No accounts configured")
-	tm.titleItem.SetTitle("No accounts configured")
+	
+	// Clear meetings and show account setup message
+	for _, item := range tm.meetingItems {
+		item.Hide()
+	}
+	tm.meetingItems = nil
+	
+	item := systray.AddMenuItem("⚠️ No accounts configured", "Add a Google account in settings")
+	item.Disable()
+	tm.meetingItems = append(tm.meetingItems, item)
+	
+	setupItem := systray.AddMenuItem("⚙️ Open Settings to Add Account", "Configure your Google account")
+	tm.meetingItems = append(tm.meetingItems, setupItem)
+	go func() {
+		for {
+			select {
+			case <-setupItem.ClickedCh:
+				go tm.openSettings()
+			case <-tm.ctx.Done():
+				return
+			}
+		}
+	}()
 }
 
 func (tm *TrayManager) updateTrayForNoMeetings() {
 	systray.SetTitle("MeetingBar")
 	systray.SetTooltip("MeetingBar - No meetings today")
-	tm.titleItem.SetTitle("No meetings today")
 }
 
 func (tm *TrayManager) updateTrayForCurrentMeeting(meeting *calendar.Meeting) {
-	title := fmt.Sprintf("In: %s", tm.truncateTitle(meeting.Title))
+	now := time.Now()
+	timeLeft := meeting.EndTime.Sub(now)
+	
+	// Use customizable format
+	title := tm.formatMeetingDisplay(tm.config.CurrentMeetingFormat, meeting, timeLeft, true)
 	systray.SetTitle(title)
-	systray.SetTooltip(fmt.Sprintf("Currently in meeting: %s", meeting.Title))
-	tm.titleItem.SetTitle(fmt.Sprintf("▶ Now: %s", meeting.Title))
+	systray.SetTooltip(fmt.Sprintf("Currently in meeting: %s\nEnds at %s (%s remaining)", 
+		meeting.Title, 
+		meeting.EndTime.Format("15:04"), 
+		formatDuration(timeLeft)))
+	tm.titleItem.SetTitle(fmt.Sprintf("▶ %s", tm.truncateTitle(meeting.Title)))
 }
 
 func (tm *TrayManager) updateTrayForUpcomingMeeting(meeting *calendar.Meeting) {
@@ -291,26 +458,73 @@ func (tm *TrayManager) updateTrayForUpcomingMeeting(meeting *calendar.Meeting) {
 	
 	var title string
 	if timeUntil < time.Minute {
-		title = fmt.Sprintf("%s (Now)", tm.truncateTitle(meeting.Title))
-	} else if timeUntil < time.Hour {
-		minutes := int(timeUntil.Minutes())
-		title = fmt.Sprintf("%s (%dm)", tm.truncateTitle(meeting.Title), minutes)
+		title = fmt.Sprintf("%s starting now", tm.truncateTitle(meeting.Title))
 	} else {
-		title = fmt.Sprintf("%s (%s)", tm.truncateTitle(meeting.Title), meeting.StartTime.Format("15:04"))
+		// Use customizable format
+		title = tm.formatMeetingDisplay(tm.config.UpcomingMeetingFormat, meeting, timeUntil, false)
 	}
 	
 	systray.SetTitle(title)
-	systray.SetTooltip(fmt.Sprintf("Next meeting: %s at %s", 
+	systray.SetTooltip(fmt.Sprintf("Next meeting: %s\nStarts at %s (in %s)", 
 		meeting.Title, 
-		meeting.StartTime.Format("15:04")))
-	tm.titleItem.SetTitle(fmt.Sprintf("Next: %s", title))
+		meeting.StartTime.Format("15:04"), 
+		formatDuration(timeUntil)))
+	tm.titleItem.SetTitle(fmt.Sprintf("Next: %s", tm.truncateTitle(meeting.Title)))
 }
 
 func (tm *TrayManager) truncateTitle(title string) string {
-	if len(title) > 25 {
-		return title[:22] + "..."
+	maxLength := tm.config.MaxTitleLength
+	if maxLength <= 0 {
+		maxLength = 25 // fallback to default
+	}
+	if len(title) > maxLength {
+		if maxLength <= 3 {
+			return title[:maxLength]
+		}
+		return title[:maxLength-3] + "..."
 	}
 	return title
+}
+
+// formatDuration formats a duration into a human-readable string like "1h 20m" or "5m"
+func formatDuration(d time.Duration) string {
+	if d < 0 {
+		return "0m"
+	}
+	
+	totalMinutes := int(d.Minutes())
+	hours := totalMinutes / 60
+	minutes := totalMinutes % 60
+	
+	if hours > 0 {
+		if minutes > 0 {
+			return fmt.Sprintf("%dh %dm", hours, minutes)
+		}
+		return fmt.Sprintf("%dh", hours)
+	}
+	if minutes <= 0 {
+		return "<1m"
+	}
+	return fmt.Sprintf("%dm", minutes)
+}
+
+// formatMeetingDisplay formats meeting display text using template strings
+func (tm *TrayManager) formatMeetingDisplay(template string, meeting *calendar.Meeting, timeValue time.Duration, isTimeLeft bool) string {
+	title := tm.truncateTitle(meeting.Title)
+	timeStr := formatDuration(timeValue)
+	
+	// Replace template variables
+	result := template
+	result = strings.ReplaceAll(result, "{title}", title)
+	if isTimeLeft {
+		result = strings.ReplaceAll(result, "{time_left}", timeStr)
+	} else {
+		result = strings.ReplaceAll(result, "{time_until}", timeStr)
+	}
+	result = strings.ReplaceAll(result, "{start_time}", meeting.StartTime.Format("15:04"))
+	result = strings.ReplaceAll(result, "{end_time}", meeting.EndTime.Format("15:04"))
+	
+	return result
 }
 
 func (tm *TrayManager) openSettings() {
@@ -332,21 +546,26 @@ func (tm *TrayManager) cleanup() {
 	}
 }
 
-// Simple default icon - a minimal 16x16 PNG icon
+// Calendar icon - a simple 16x16 PNG calendar icon
 func getDefaultIcon() []byte {
-	// Valid minimal PNG (16x16 black square)
+	// Simple calendar icon with blue header and grid pattern
 	return []byte{
-		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-		0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x37, 0x6e, 0xf9,
-		0x24, 0x00, 0x00, 0x00, 0x04, 0x67, 0x41, 0x4d, 0x41, 0x00, 0x00, 0xb1, 0x8f, 0x0b, 0xfc, 0x61,
-		0x05, 0x00, 0x00, 0x00, 0x20, 0x63, 0x48, 0x52, 0x4d, 0x00, 0x00, 0x7a, 0x26, 0x00, 0x00, 0x80,
-		0x84, 0x00, 0x00, 0xfa, 0x00, 0x00, 0x00, 0x80, 0xe8, 0x00, 0x00, 0x75, 0x30, 0x00, 0x00, 0xea,
-		0x60, 0x00, 0x00, 0x3a, 0x98, 0x00, 0x00, 0x17, 0x70, 0x9c, 0xba, 0x51, 0x3c, 0x00, 0x00, 0x00,
-		0x06, 0x50, 0x4c, 0x54, 0x45, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xa5, 0xd9, 0x9f, 0xdd, 0x00,
-		0x00, 0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0b, 0x13, 0x00, 0x00, 0x0b, 0x13, 0x01,
-		0x00, 0x9a, 0x9c, 0x18, 0x00, 0x00, 0x00, 0x1a, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0x60,
-		0x00, 0x02, 0x96, 0x00, 0x05, 0x18, 0x30, 0x60, 0xc0, 0x80, 0x01, 0x03, 0x06, 0x0c, 0x18, 0x30,
-		0x60, 0xc0, 0x80, 0x01, 0x03, 0x06, 0x00, 0x00, 0x01, 0x68, 0x00, 0x0a, 0xac, 0x4f, 0xfc, 0x17,
-		0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+		0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10, 0x08, 0x03, 0x00, 0x00, 0x00, 0x28, 0x2D, 0x0F,
+		0x53, 0x00, 0x00, 0x00, 0x2A, 0x50, 0x4C, 0x54, 0x45, 0xFF, 0xFF, 0xFF, 0x3B, 0x82, 0xF6, 0x60,
+		0x9C, 0xF8, 0x93, 0xC5, 0xFD, 0xDB, 0xEA, 0xFE, 0xE5, 0xF3, 0xFF, 0xC0, 0xC0, 0xC0, 0x80, 0x80,
+		0x80, 0x40, 0x40, 0x40, 0x00, 0x00, 0x00, 0xF0, 0xF0, 0xF0, 0xD0, 0xD0, 0xD0, 0xA0, 0xA0, 0xA0,
+		0x70, 0x70, 0x70, 0x20, 0x20, 0x20, 0x99, 0xF5, 0x2C, 0xA2, 0x00, 0x00, 0x00, 0x74, 0x49, 0x44,
+		0x41, 0x54, 0x18, 0x19, 0x63, 0x60, 0x00, 0x82, 0x46, 0x26, 0x06, 0x06, 0x86, 0x26, 0x66, 0x16,
+		0x76, 0x0E, 0x4E, 0x2E, 0x6E, 0x1E, 0x5E, 0x3E, 0x7E, 0x01, 0x41, 0x21, 0x61, 0x11, 0x51, 0x31,
+		0x71, 0x09, 0x49, 0x29, 0x69, 0x19, 0x59, 0x39, 0x79, 0x05, 0x45, 0x25, 0x65, 0x15, 0x55, 0x35,
+		0x75, 0x0D, 0x4D, 0x2D, 0x6D, 0x1D, 0x5D, 0x3D, 0x7D, 0x03, 0x43, 0x23, 0x63, 0x13, 0x53, 0x33,
+		0x73, 0x0B, 0x4B, 0x2B, 0x6B, 0x1B, 0x5B, 0x3B, 0x7B, 0x07, 0x47, 0x27, 0x67, 0x17, 0x57, 0x37,
+		0x77, 0x0F, 0x4F, 0x2F, 0x6F, 0x1F, 0x5F, 0x3F, 0x7F, 0x80, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60,
+		0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0, 0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68,
+		0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8, 0x04, 0x84, 0x44, 0xC4, 0x24, 0xA4, 0x64,
+		0xE4, 0x14, 0x94, 0x54, 0xD4, 0x34, 0xB4, 0x74, 0xF4, 0x0C, 0x8C, 0x00, 0x00, 0x19, 0x0A, 0x0E,
+		0x3F, 0x92, 0x38, 0x04, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60,
+		0x82,
 	}
 }

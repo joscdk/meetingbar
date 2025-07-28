@@ -743,7 +743,7 @@ func (wsm *WebSettingsManager) handleOAuth2API(w http.ResponseWriter, r *http.Re
 		wsm.config.OAuth2.ClientSecret = data.ClientSecret
 
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 
@@ -754,7 +754,7 @@ func (wsm *WebSettingsManager) handleOAuth2API(w http.ResponseWriter, r *http.Re
 		wsm.config.OAuth2.ClientSecret = ""
 
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 
@@ -2148,6 +2148,41 @@ func (wsm *WebSettingsManager) handleGeneralPage(w http.ResponseWriter, r *http.
                         </div>
                     </div>
                 </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Maximum Title Length</h4>
+                        <p>Limit the length of meeting titles in the tray (characters)</p>
+                    </div>
+                    <div class="setting-control">
+                        <div class="form-group" style="margin: 0; width: 100px;">
+                            <select id="maxTitleLength">
+                                <option value="15" {{if eq .Config.MaxTitleLength 15}}selected{{end}}>15</option>
+                                <option value="20" {{if eq .Config.MaxTitleLength 20}}selected{{end}}>20</option>
+                                <option value="25" {{if eq .Config.MaxTitleLength 25}}selected{{end}}>25</option>
+                                <option value="30" {{if eq .Config.MaxTitleLength 30}}selected{{end}}>30</option>
+                                <option value="40" {{if eq .Config.MaxTitleLength 40}}selected{{end}}>40</option>
+                                <option value="50" {{if eq .Config.MaxTitleLength 50}}selected{{end}}>50</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3><span class="icon">🎨</span> Display Format</h3>
+                
+                <div class="form-group">
+                    <label for="currentMeetingFormat">Current Meeting Format:</label>
+                    <input type="text" id="currentMeetingFormat" value="{{.Config.CurrentMeetingFormat}}" placeholder="{title} {time_left} left">
+                    <small style="color: #64748b; font-size: 0.85rem; margin-top: 5px; display: block;">Available variables: {title}, {time_left}, {start_time}, {end_time}</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="upcomingMeetingFormat">Upcoming Meeting Format:</label>
+                    <input type="text" id="upcomingMeetingFormat" value="{{.Config.UpcomingMeetingFormat}}" placeholder="{title} in {time_until}">
+                    <small style="color: #64748b; font-size: 0.85rem; margin-top: 5px; display: block;">Available variables: {title}, {time_until}, {start_time}, {end_time}</small>
+                </div>
             </div>
             
             <div class="settings-section">
@@ -2203,6 +2238,9 @@ func (wsm *WebSettingsManager) handleGeneralPage(w http.ResponseWriter, r *http.
                 refreshInterval: parseInt(document.getElementById('refreshInterval').value),
                 showDuration: document.getElementById('showDuration').checked,
                 maxMeetings: parseInt(document.getElementById('maxMeetings').value),
+                maxTitleLength: parseInt(document.getElementById('maxTitleLength').value),
+                currentMeetingFormat: document.getElementById('currentMeetingFormat').value,
+                upcomingMeetingFormat: document.getElementById('upcomingMeetingFormat').value,
                 startWithSystem: document.getElementById('startWithSystem').checked,
                 autoRefreshStartup: document.getElementById('autoRefreshStartup').checked
             };
@@ -2333,7 +2371,7 @@ func (wsm *WebSettingsManager) handleCalendarsAPI(w http.ResponseWriter, r *http
 		
 		// Save configuration
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 		
@@ -2379,7 +2417,7 @@ func (wsm *WebSettingsManager) handleNotificationsAPI(w http.ResponseWriter, r *
 		
 		// Save configuration
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 		
@@ -2422,8 +2460,11 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 			RefreshInterval     int  `json:"refreshInterval"`
 			ShowDuration        bool `json:"showDuration"`
 			MaxMeetings         int  `json:"maxMeetings"`
-			StartWithSystem     bool `json:"startWithSystem"`
-			AutoRefreshStartup  bool `json:"autoRefreshStartup"`
+			MaxTitleLength        int    `json:"maxTitleLength"`
+			CurrentMeetingFormat  string `json:"currentMeetingFormat"`
+			UpcomingMeetingFormat string `json:"upcomingMeetingFormat"`
+			StartWithSystem       bool   `json:"startWithSystem"`
+			AutoRefreshStartup    bool   `json:"autoRefreshStartup"`
 		} `json:"settings"`
 	}
 
@@ -2438,12 +2479,15 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 		wsm.config.RefreshInterval = data.Settings.RefreshInterval
 		wsm.config.ShowDuration = data.Settings.ShowDuration
 		wsm.config.MaxMeetings = data.Settings.MaxMeetings
+		wsm.config.MaxTitleLength = data.Settings.MaxTitleLength
+		wsm.config.CurrentMeetingFormat = data.Settings.CurrentMeetingFormat
+		wsm.config.UpcomingMeetingFormat = data.Settings.UpcomingMeetingFormat
 		wsm.config.StartWithSystem = data.Settings.StartWithSystem
 		wsm.config.AutoRefreshStartup = data.Settings.AutoRefreshStartup
 		
 		// Save configuration
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 		
@@ -2463,7 +2507,7 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 		
 		// Save
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 		
@@ -2475,7 +2519,7 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 		
 		// Save empty config
 		if err := wsm.config.Save(); err != nil {
-			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+			json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 			return
 		}
 		
@@ -2572,7 +2616,7 @@ func (wsm *WebSettingsManager) handleRemoveAccountAPI(w http.ResponseWriter, r *
 
 	// Save configuration
 	if err := wsm.config.Save(); err != nil {
-		json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration"})
+		json.NewEncoder(w).Encode(APIResponse{Success: false, Message: "Failed to save configuration: " + err.Error()})
 		return
 	}
 

@@ -27,6 +27,7 @@ type Config struct {
 	AutoRefreshStartup      bool         `mapstructure:"auto_refresh_startup"`
 	LaunchAtLogin           bool         `mapstructure:"launch_at_login"`
 	Debug                   bool         `mapstructure:"debug"`
+	CalendarBackend         string       `mapstructure:"calendar_backend"` // "google" or "gnome"
 	OAuth2                  OAuth2Config `mapstructure:"oauth2"`
 }
 
@@ -64,6 +65,7 @@ const (
 	DefaultStartWithSystem          = false
 	DefaultAutoRefreshStartup       = true
 	DefaultLaunchAtLogin            = false
+	DefaultCalendarBackend          = "google"
 )
 
 func Load() (*Config, error) {
@@ -93,6 +95,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("auto_refresh_startup", DefaultAutoRefreshStartup)
 	viper.SetDefault("launch_at_login", DefaultLaunchAtLogin)
 	viper.SetDefault("debug", false)
+	viper.SetDefault("calendar_backend", DefaultCalendarBackend)
 	viper.SetDefault("accounts", []Account{})
 	viper.SetDefault("enabled_calendars", []string{})
 	viper.SetDefault("oauth2", OAuth2Config{})
@@ -138,6 +141,7 @@ func (c *Config) Save() error {
 	viper.Set("auto_refresh_startup", c.AutoRefreshStartup)
 	viper.Set("launch_at_login", c.LaunchAtLogin)
 	viper.Set("debug", c.Debug)
+	viper.Set("calendar_backend", c.CalendarBackend)
 	viper.Set("oauth2", c.OAuth2)
 	
 	// Try to write config, if file doesn't exist use SafeWriteConfig
@@ -212,6 +216,7 @@ func NewConfig() *Config {
 		AutoRefreshStartup:      DefaultAutoRefreshStartup,
 		LaunchAtLogin:           DefaultLaunchAtLogin,
 		Debug:                   false,
+		CalendarBackend:         DefaultCalendarBackend,
 		OAuth2:                  OAuth2Config{},
 	}
 }

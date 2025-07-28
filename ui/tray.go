@@ -17,7 +17,7 @@ import (
 
 type TrayManager struct {
 	config          *config.Config
-	calendarService *calendar.GoogleCalendarService
+	calendarService *calendar.UnifiedCalendarService
 	meetings        []calendar.Meeting
 	ticker          *time.Ticker
 	ctx             context.Context
@@ -47,7 +47,7 @@ func OnReady(cfg *config.Config) {
 	
 	trayManager = &TrayManager{
 		config:          cfg,
-		calendarService: calendar.NewGoogleCalendarService(ctx),
+		calendarService: calendar.NewUnifiedCalendarService(ctx, cfg),
 		ctx:             ctx,
 		cancel:          cancel,
 		notificationMgr: NewNotificationManager(cfg),
@@ -176,38 +176,69 @@ func (tm *TrayManager) startPeriodicRefresh() {
 }
 
 func (tm *TrayManager) refreshMeetings() {
-	if len(tm.config.Accounts) == 0 {
+	// Check backend requirements
+	if tm.calendarService.RequiresAuthentication() && len(tm.config.Accounts) == 0 {
 		tm.updateTrayForNoAccounts()
 		return
 	}
 	
 	var allMeetings []calendar.Meeting
 	
-	for _, account := range tm.config.Accounts {
-		// Get enabled calendars for this account
+	if tm.calendarService.IsGnomeBackend() {
+		// For GNOME backend, we don't use accounts - get meetings directly
 		var enabledCalendars []string
-		
-		// If no calendars are specifically enabled, try to get all calendars
 		if len(tm.config.EnabledCalendars) == 0 {
-			calendars, err := tm.calendarService.GetCalendars(account.ID)
+			// Get all available calendars if none specifically enabled
+			calendars, err := tm.calendarService.GetCalendars("")
 			if err != nil {
-				log.Printf("Failed to get calendars for account %s: %v", account.Email, err)
-				continue
+				log.Printf("Failed to get GNOME calendars: %v", err)
+				tm.updateTrayForNoAccounts()
+				return
 			}
 			for _, cal := range calendars {
-				enabledCalendars = append(enabledCalendars, cal.ID)
+				if cal.Enabled {
+					enabledCalendars = append(enabledCalendars, cal.ID)
+				}
 			}
 		} else {
 			enabledCalendars = tm.config.EnabledCalendars
 		}
 		
-		meetings, err := tm.calendarService.GetMeetings(account.ID, enabledCalendars)
+		meetings, err := tm.calendarService.GetMeetings("", enabledCalendars)
 		if err != nil {
-			log.Printf("Failed to get meetings for account %s: %v", account.Email, err)
-			continue
+			log.Printf("Failed to get meetings from GNOME Calendar: %v", err)
+			tm.updateTrayForNoAccounts()
+			return
 		}
-		
-		allMeetings = append(allMeetings, meetings...)
+		allMeetings = meetings
+	} else {
+		// For Google backend, iterate through accounts
+		for _, account := range tm.config.Accounts {
+			// Get enabled calendars for this account
+			var enabledCalendars []string
+			
+			// If no calendars are specifically enabled, try to get all calendars
+			if len(tm.config.EnabledCalendars) == 0 {
+				calendars, err := tm.calendarService.GetCalendars(account.ID)
+				if err != nil {
+					log.Printf("Failed to get calendars for account %s: %v", account.Email, err)
+					continue
+				}
+				for _, cal := range calendars {
+					enabledCalendars = append(enabledCalendars, cal.ID)
+				}
+			} else {
+				enabledCalendars = tm.config.EnabledCalendars
+			}
+			
+			meetings, err := tm.calendarService.GetMeetings(account.ID, enabledCalendars)
+			if err != nil {
+				log.Printf("Failed to get meetings for account %s: %v", account.Email, err)
+				continue
+			}
+			
+			allMeetings = append(allMeetings, meetings...)
+		}
 	}
 	
 	// Sort meetings by start time

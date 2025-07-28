@@ -39,7 +39,7 @@ type CalendarInfo struct {
 	BackgroundColor string `json:"backgroundColor"`
 }
 
-func (g *GoogleCalendarService) GetCalendars(accountID string) ([]CalendarInfo, error) {
+func (g *GoogleCalendarService) GetCalendars(accountID string) ([]config.Calendar, error) {
 	client, err := GetClientForAccount(g.ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client for account: %w", err)
@@ -55,13 +55,14 @@ func (g *GoogleCalendarService) GetCalendars(accountID string) ([]CalendarInfo, 
 		return nil, fmt.Errorf("failed to retrieve calendar list: %w", err)
 	}
 
-	var calendars []CalendarInfo
+	var calendars []config.Calendar
 	for _, item := range calendarList.Items {
-		calendars = append(calendars, CalendarInfo{
-			ID:              item.Id,
-			Summary:         item.Summary,
-			Description:     item.Description,
-			BackgroundColor: item.BackgroundColor,
+		calendars = append(calendars, config.Calendar{
+			ID:        item.Id,
+			Name:      item.Summary,
+			AccountID: accountID,
+			Enabled:   true, // Google calendars are enabled by default
+			Color:     item.BackgroundColor,
 		})
 	}
 

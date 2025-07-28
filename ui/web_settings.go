@@ -16,7 +16,7 @@ import (
 
 type WebSettingsManager struct {
 	config          *config.Config
-	calendarService *calendar.GoogleCalendarService
+	calendarService *calendar.UnifiedCalendarService
 	notificationMgr *NotificationManager
 	ctx             context.Context
 	server          *http.Server
@@ -62,7 +62,7 @@ type CalendarInfo struct {
 func NewWebSettingsManager(cfg *config.Config, ctx context.Context) *WebSettingsManager {
 	return &WebSettingsManager{
 		config:          cfg,
-		calendarService: calendar.NewGoogleCalendarService(ctx),
+		calendarService: calendar.NewUnifiedCalendarService(ctx, cfg),
 		notificationMgr: NewNotificationManager(cfg),
 		ctx:             ctx,
 		port:            8765, // Different port from OAuth callback
@@ -2094,6 +2094,25 @@ func (wsm *WebSettingsManager) handleGeneralPage(w http.ResponseWriter, r *http.
             <a href="/" class="back-link">← Back to Settings</a>
             
             <div class="settings-section">
+                <h3><span class="icon">📅</span> Calendar Backend</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Calendar Source</h4>
+                        <p>Choose between Google Calendar (requires account setup) or GNOME Calendar (uses system calendars)</p>
+                    </div>
+                    <div class="setting-control">
+                        <div class="form-group" style="margin: 0; width: 200px;">
+                            <select id="calendarBackend">
+                                <option value="google" {{if eq .Config.CalendarBackend "google"}}selected{{end}}>Google Calendar</option>
+                                <option value="gnome" {{if eq .Config.CalendarBackend "gnome"}}selected{{end}}>GNOME Calendar</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3><span class="icon">🔄</span> Refresh Settings</h3>
                 
                 <div class="setting-item">
@@ -2235,6 +2254,7 @@ func (wsm *WebSettingsManager) handleGeneralPage(w http.ResponseWriter, r *http.
     <script>
         async function saveGeneralSettings() {
             const settings = {
+                calendarBackend: document.getElementById('calendarBackend').value,
                 refreshInterval: parseInt(document.getElementById('refreshInterval').value),
                 showDuration: document.getElementById('showDuration').checked,
                 maxMeetings: parseInt(document.getElementById('maxMeetings').value),
@@ -2457,9 +2477,10 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 	var data struct {
 		Action   string `json:"action"`
 		Settings struct {
-			RefreshInterval     int  `json:"refreshInterval"`
-			ShowDuration        bool `json:"showDuration"`
-			MaxMeetings         int  `json:"maxMeetings"`
+			CalendarBackend       string `json:"calendarBackend"`
+			RefreshInterval       int    `json:"refreshInterval"`
+			ShowDuration          bool   `json:"showDuration"`
+			MaxMeetings           int    `json:"maxMeetings"`
 			MaxTitleLength        int    `json:"maxTitleLength"`
 			CurrentMeetingFormat  string `json:"currentMeetingFormat"`
 			UpcomingMeetingFormat string `json:"upcomingMeetingFormat"`
@@ -2476,6 +2497,7 @@ func (wsm *WebSettingsManager) handleGeneralAPI(w http.ResponseWriter, r *http.R
 	switch data.Action {
 	case "save":
 		// Update general settings
+		wsm.config.CalendarBackend = data.Settings.CalendarBackend
 		wsm.config.RefreshInterval = data.Settings.RefreshInterval
 		wsm.config.ShowDuration = data.Settings.ShowDuration
 		wsm.config.MaxMeetings = data.Settings.MaxMeetings
@@ -2692,19 +2714,21 @@ func (wsm *WebSettingsManager) getAccountCalendarsInfo() []AccountCalendarsInfo 
 			}
 			
 			// Default color if not provided
-			color := cal.BackgroundColor
+			color := cal.Color
 			if color == "" {
 				color = "#3b82f6"
 			}
 			
-			description := cal.Description
-			if description == "" {
+			description := "Calendar"
+			if wsm.config.CalendarBackend == "google" {
 				description = "Google Calendar"
+			} else if wsm.config.CalendarBackend == "gnome" {
+				description = "GNOME Calendar"
 			}
 			
 			calendarInfos = append(calendarInfos, CalendarInfo{
 				ID:          cal.ID,
-				Title:       cal.Summary,
+				Title:       cal.Name,
 				Description: description,
 				Color:       color,
 				Selected:    selected,

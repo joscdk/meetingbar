@@ -15,7 +15,7 @@ import (
 
 type AdvancedSettingsManager struct {
 	config          *config.Config
-	calendarService *calendar.GoogleCalendarService
+	calendarService *calendar.UnifiedCalendarService
 	ctx             context.Context
 	scanner         *bufio.Scanner
 }
@@ -23,7 +23,7 @@ type AdvancedSettingsManager struct {
 func NewAdvancedSettingsManager(cfg *config.Config, ctx context.Context) *AdvancedSettingsManager {
 	return &AdvancedSettingsManager{
 		config:          cfg,
-		calendarService: calendar.NewGoogleCalendarService(ctx),
+		calendarService: calendar.NewUnifiedCalendarService(ctx, cfg),
 		ctx:             ctx,
 		scanner:         bufio.NewScanner(os.Stdin),
 	}
@@ -374,14 +374,25 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 	
 	// Get all calendars from all accounts
 	fmt.Println("🔄 Loading calendars...")
-	var allCalendars []calendar.CalendarInfo
-	for _, account := range sm.config.Accounts {
-		calendars, err := sm.calendarService.GetCalendars(account.ID)
+	var allCalendars []config.Calendar
+	if sm.calendarService.IsGnomeBackend() {
+		// For GNOME backend, get calendars directly
+		calendars, err := sm.calendarService.GetCalendars("")
 		if err != nil {
-			fmt.Printf("⚠️  Failed to load calendars for %s: %v\n", account.Email, err)
-			continue
+			fmt.Printf("⚠️  Failed to load GNOME calendars: %v\n", err)
+		} else {
+			allCalendars = calendars
 		}
-		allCalendars = append(allCalendars, calendars...)
+	} else {
+		// For Google backend, iterate through accounts
+		for _, account := range sm.config.Accounts {
+			calendars, err := sm.calendarService.GetCalendars(account.ID)
+			if err != nil {
+				fmt.Printf("⚠️  Failed to load calendars for %s: %v\n", account.Email, err)
+				continue
+			}
+			allCalendars = append(allCalendars, calendars...)
+		}
 	}
 	
 	if len(allCalendars) == 0 {
@@ -402,7 +413,7 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 				break
 			}
 		}
-		fmt.Printf("  %d. %s %s\n", i+1, enabled, cal.Summary)
+		fmt.Printf("  %d. %s %s\n", i+1, enabled, cal.Name)
 	}
 	
 	fmt.Println("\nChoose an option:")
@@ -432,7 +443,7 @@ func (sm *AdvancedSettingsManager) manageCalendars() {
 	sm.scanner.Scan()
 }
 
-func (sm *AdvancedSettingsManager) toggleCalendar(calendars []calendar.CalendarInfo) {
+func (sm *AdvancedSettingsManager) toggleCalendar(calendars []config.Calendar) {
 	fmt.Print("\nEnter calendar number to toggle: ")
 	if !sm.scanner.Scan() {
 		return
@@ -470,11 +481,11 @@ func (sm *AdvancedSettingsManager) toggleCalendar(calendars []calendar.CalendarI
 		if enabled {
 			status = "disabled"
 		}
-		fmt.Printf("✅ Calendar '%s' %s!\n", cal.Summary, status)
+		fmt.Printf("✅ Calendar '%s' %s!\n", cal.Name, status)
 	}
 }
 
-func (sm *AdvancedSettingsManager) enableAllCalendars(calendars []calendar.CalendarInfo) {
+func (sm *AdvancedSettingsManager) enableAllCalendars(calendars []config.Calendar) {
 	sm.config.EnabledCalendars = nil
 	for _, cal := range calendars {
 		sm.config.EnabledCalendars = append(sm.config.EnabledCalendars, cal.ID)

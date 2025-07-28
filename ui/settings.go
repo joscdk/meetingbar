@@ -15,14 +15,14 @@ import (
 
 type SettingsManager struct {
 	config          *config.Config
-	calendarService *calendar.GoogleCalendarService
+	calendarService *calendar.UnifiedCalendarService
 	ctx             context.Context
 }
 
 func NewSettingsManager(cfg *config.Config, ctx context.Context) *SettingsManager {
 	return &SettingsManager{
 		config:          cfg,
-		calendarService: calendar.NewGoogleCalendarService(ctx),
+		calendarService: calendar.NewUnifiedCalendarService(ctx, cfg),
 		ctx:             ctx,
 	}
 }
@@ -169,14 +169,25 @@ func (sm *SettingsManager) manageCalendars() error {
 	}
 	
 	// Get all calendars from all accounts
-	var allCalendars []calendar.CalendarInfo
-	for _, account := range sm.config.Accounts {
-		calendars, err := sm.calendarService.GetCalendars(account.ID)
+	var allCalendars []config.Calendar
+	if sm.calendarService.IsGnomeBackend() {
+		// For GNOME backend, get calendars directly
+		calendars, err := sm.calendarService.GetCalendars("")
 		if err != nil {
-			log.Printf("Failed to get calendars for %s: %v", account.Email, err)
-			continue
+			log.Printf("Failed to get GNOME calendars: %v", err)
+		} else {
+			allCalendars = calendars
 		}
-		allCalendars = append(allCalendars, calendars...)
+	} else {
+		// For Google backend, iterate through accounts
+		for _, account := range sm.config.Accounts {
+			calendars, err := sm.calendarService.GetCalendars(account.ID)
+			if err != nil {
+				log.Printf("Failed to get calendars for %s: %v", account.Email, err)
+				continue
+			}
+			allCalendars = append(allCalendars, calendars...)
+		}
 	}
 	
 	if len(allCalendars) == 0 {
@@ -191,7 +202,7 @@ func (sm *SettingsManager) manageCalendars() error {
 	var selectedCalendars []string
 	
 	for _, cal := range allCalendars {
-		option := fmt.Sprintf("%s", cal.Summary)
+		option := fmt.Sprintf("%s", cal.Name)
 		calendarOptions = append(calendarOptions, option)
 		
 		// Check if calendar is enabled
@@ -219,7 +230,7 @@ func (sm *SettingsManager) manageCalendars() error {
 	sm.config.EnabledCalendars = nil
 	for _, selectedOption := range selected {
 		for _, cal := range allCalendars {
-			option := fmt.Sprintf("%s", cal.Summary)
+			option := fmt.Sprintf("%s", cal.Name)
 			if option == selectedOption {
 				sm.config.EnabledCalendars = append(sm.config.EnabledCalendars, cal.ID)
 				break

@@ -341,6 +341,7 @@ func (wsm *WebSettingsManager) handleHome(w http.ResponseWriter, r *http.Request
         
         <div class="main-content">
             <nav class="sidebar">
+                {{if eq .Config.CalendarBackend "google"}}
                 <a href="/oauth2" class="nav-item">
                     <span class="icon">🔐</span>
                     <span class="title">OAuth2 Credentials</span>
@@ -351,6 +352,7 @@ func (wsm *WebSettingsManager) handleHome(w http.ResponseWriter, r *http.Request
                     <span class="title">Google Accounts</span>
                     <span class="status">{{.AccountsCount}} accounts</span>
                 </a>
+                {{end}}
                 <a href="/calendars" class="nav-item">
                     <span class="icon">📅</span>
                     <span class="title">Calendar Selection</span>
@@ -370,6 +372,7 @@ func (wsm *WebSettingsManager) handleHome(w http.ResponseWriter, r *http.Request
             
             <div class="content">
                 <div class="status-grid">
+                    {{if eq .Config.CalendarBackend "google"}}
                     <div class="status-card {{if .OAuth2Set}}success{{else}}error{{end}}">
                         <h3><span class="icon">🔐</span> OAuth2 Credentials</h3>
                         <p>{{if .OAuth2Set}}Ready to authenticate with Google{{else}}Required for Google Calendar access{{end}}</p>
@@ -379,6 +382,12 @@ func (wsm *WebSettingsManager) handleHome(w http.ResponseWriter, r *http.Request
                         <h3><span class="icon">👤</span> Google Accounts</h3>
                         <p>{{.AccountsCount}} account(s) configured</p>
                     </div>
+                    {{else}}
+                    <div class="status-card success">
+                        <h3><span class="icon">📅</span> GNOME Calendar</h3>
+                        <p>Using system calendar integration</p>
+                    </div>
+                    {{end}}
                     
                     <div class="status-card {{if gt .CalendarsCount 0}}success{{else}}error{{end}}">
                         <h3><span class="icon">📅</span> Calendars</h3>
@@ -1301,7 +1310,7 @@ func (wsm *WebSettingsManager) handleCalendarsPage(w http.ResponseWriter, r *htt
     <div class="container">
         <div class="header">
             <h1>📅 Calendar Selection</h1>
-            <p>Choose which calendars to monitor for meetings</p>
+            <p>Choose which {{if eq .Config.CalendarBackend "gnome"}}GNOME{{else}}Google{{end}} calendars to monitor for meetings</p>
         </div>
         
         <div class="content">
@@ -1309,7 +1318,11 @@ func (wsm *WebSettingsManager) handleCalendarsPage(w http.ResponseWriter, r *htt
             
             {{if not .HasAccounts}}
             <div class="warning">
+                {{if eq .Config.CalendarBackend "google"}}
                 <p>⚠️ You need to add Google accounts first before selecting calendars.</p>
+                {{else}}
+                <p>⚠️ No GNOME calendars found. Make sure Evolution Data Server is running and you have calendars configured.</p>
+                {{end}}
             </div>
             {{end}}
             
@@ -1424,14 +1437,16 @@ func (wsm *WebSettingsManager) handleCalendarsPage(w http.ResponseWriter, r *htt
 </body>
 </html>`
 
+	accountCalendars := wsm.getAccountCalendarsInfo()
+	
 	data := struct {
 		Config           *config.Config
 		HasAccounts      bool
 		AccountCalendars []AccountCalendarsInfo
 	}{
 		Config:           wsm.config,
-		HasAccounts:      len(wsm.config.Accounts) > 0,
-		AccountCalendars: wsm.getAccountCalendarsInfo(),
+		HasAccounts:      len(accountCalendars) > 0, // Check if any calendars are available for current backend
+		AccountCalendars: accountCalendars,
 	}
 
 	t, err := template.New("calendars").Parse(tmpl)
@@ -2688,6 +2703,52 @@ func (wsm *WebSettingsManager) getAccountsInfo() []AccountInfo {
 func (wsm *WebSettingsManager) getAccountCalendarsInfo() []AccountCalendarsInfo {
 	var accountCalendars []AccountCalendarsInfo
 	
+	if wsm.calendarService.IsGnomeBackend() {
+		// For GNOME backend, get calendars directly (no accounts)
+		calendars, err := wsm.calendarService.GetCalendars("")
+		if err != nil {
+			log.Printf("Failed to get GNOME calendars: %v", err)
+			return accountCalendars
+		}
+		
+		// Create a single "account" entry for GNOME calendars
+		var calendarInfos []CalendarInfo
+		for _, cal := range calendars {
+			// Check if calendar is selected
+			selected := false
+			for _, enabledID := range wsm.config.EnabledCalendars {
+				if enabledID == cal.ID {
+					selected = true
+					break
+				}
+			}
+			
+			// Default color if not provided
+			color := cal.Color
+			if color == "" {
+				color = "#3b82f6"
+			}
+			
+			calendarInfos = append(calendarInfos, CalendarInfo{
+				ID:          cal.ID,
+				Title:       cal.Name,
+				Description: "GNOME Calendar",
+				Color:       color,
+				Selected:    selected,
+			})
+		}
+		
+		accountCalendars = append(accountCalendars, AccountCalendarsInfo{
+			Email:         "GNOME Calendars",
+			Avatar:        "📅",
+			CalendarCount: len(calendarInfos),
+			Calendars:     calendarInfos,
+		})
+		
+		return accountCalendars
+	}
+	
+	// For Google backend, iterate through accounts
 	for _, account := range wsm.config.Accounts {
 		// Get first letter for avatar
 		avatar := "?"

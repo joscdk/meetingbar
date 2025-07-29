@@ -64,15 +64,24 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 
 	var calendars []CalendarSource
 	for objectPath, interfaces := range managedObjects {
+		// Debug: log what interfaces each object has
+		var interfaceNames []string
+		for interfaceName := range interfaces {
+			interfaceNames = append(interfaceNames, interfaceName)
+		}
+		log.Printf("Object %s has interfaces: %v", objectPath, interfaceNames)
+		
 		// Check if this object has a Source interface
 		sourceInterface, hasSource := interfaces["org.gnome.evolution.dataserver.Source"]
 		if !hasSource {
+			log.Printf("Skipping %s - no Source interface", objectPath)
 			continue
 		}
 
 		// Check if it has a Calendar extension
 		_, hasCalendar := interfaces["org.gnome.evolution.dataserver.Source.Calendar"]
 		if !hasCalendar {
+			log.Printf("Skipping %s - no Calendar extension", objectPath)
 			continue // Skip non-calendar sources
 		}
 		
@@ -116,6 +125,7 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		calendars = append(calendars, calendar)
 	}
 
+	log.Printf("Total calendars found: %d", len(calendars))
 	return calendars, nil
 }
 

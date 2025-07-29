@@ -74,6 +74,10 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 	log.Printf("Found %d managed objects from EDS", len(managedObjects))
 
 	var calendars []CalendarSource
+	var potentialCalendars int
+	var sourceCount int
+	var calendarExtensionCount int
+	
 	for objectPath, interfaces := range managedObjects {
 		// Debug: log what interfaces each object has
 		var interfaceNames []string
@@ -82,16 +86,21 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		}
 		log.Printf("Object %s has interfaces: %v", objectPath, interfaceNames)
 		
-		// Check if this object has a Source interface
+		// Count objects with Source interface
 		sourceInterface, hasSource := interfaces["org.gnome.evolution.dataserver.Source"]
-		if !hasSource {
+		if hasSource {
+			sourceCount++
+		} else {
 			log.Printf("Skipping %s - no Source interface", objectPath)
 			continue
 		}
 
-		// Check if it has a Calendar extension
+		// Count objects with Calendar extension
 		_, hasCalendar := interfaces["org.gnome.evolution.dataserver.Source.Calendar"]
-		if !hasCalendar {
+		if hasCalendar {
+			calendarExtensionCount++
+			potentialCalendars++
+		} else {
 			log.Printf("Skipping %s - no Calendar extension", objectPath)
 			continue // Skip non-calendar sources
 		}
@@ -143,6 +152,7 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		// Use a default display name if none found
 		if displayName == "" {
 			displayName = fmt.Sprintf("Calendar_%s", strings.Split(string(objectPath), "_")[len(strings.Split(string(objectPath), "_"))-1])
+			log.Printf("  Using default display name: %s", displayName)
 		}
 		
 		calendar := CalendarSource{
@@ -157,7 +167,13 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		calendars = append(calendars, calendar)
 	}
 
-	log.Printf("Total calendars found: %d", len(calendars))
+	log.Printf("=== GNOME Calendar Discovery Summary ===")
+	log.Printf("Total managed objects: %d", len(managedObjects))
+	log.Printf("Objects with Source interface: %d", sourceCount)
+	log.Printf("Objects with Calendar extension: %d", calendarExtensionCount)
+	log.Printf("Potential calendars found: %d", potentialCalendars)
+	log.Printf("Final calendars created: %d", len(calendars))
+	log.Printf("========================================")
 	return calendars, nil
 }
 

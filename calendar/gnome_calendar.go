@@ -10,6 +10,17 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+// Helper function to get property keys for debugging
+func getPropertyKeys(properties map[string]dbus.Variant) []string {
+	keys := make([]string, len(properties))
+	i := 0
+	for key := range properties {
+		keys[i] = key
+		i++
+	}
+	return keys
+}
+
 // GnomeCalendarService provides calendar access through Evolution Data Server
 type GnomeCalendarService struct {
 	ctx  context.Context
@@ -85,34 +96,55 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 			continue // Skip non-calendar sources
 		}
 		
-		log.Printf("Found calendar source: %s", objectPath)
-
+		log.Printf("✓ Found calendar source: %s with source properties: %v", objectPath, getPropertyKeys(sourceInterface))
+		
 		// Extract source properties
 		var displayName string
-		var enabled bool
+		var enabled bool = true // Default to enabled if property not found
 		
 		if displayNameVariant, ok := sourceInterface["DisplayName"]; ok {
 			if name, ok := displayNameVariant.Value().(string); ok {
 				displayName = name
+				log.Printf("  DisplayName: %s", name)
+			} else {
+				log.Printf("  DisplayName variant conversion failed: %T", displayNameVariant.Value())
 			}
+		} else {
+			log.Printf("  No DisplayName property found")
 		}
 		
 		if enabledVariant, ok := sourceInterface["Enabled"]; ok {
 			if isEnabled, ok := enabledVariant.Value().(bool); ok {
 				enabled = isEnabled
+				log.Printf("  Enabled: %t", isEnabled)
+			} else {
+				log.Printf("  Enabled variant conversion failed: %T", enabledVariant.Value())
 			}
+		} else {
+			log.Printf("  No Enabled property found, defaulting to true")
 		}
 
 		// Get backend type from Calendar extension if available
 		var backend string
 		if calendarInterface, hasCalendarExt := interfaces["org.gnome.evolution.dataserver.Source.Calendar"]; hasCalendarExt {
+			log.Printf("  Calendar extension properties: %v", getPropertyKeys(calendarInterface))
 			if backendVariant, ok := calendarInterface["BackendName"]; ok {
 				if backendName, ok := backendVariant.Value().(string); ok {
 					backend = backendName
+					log.Printf("  Backend: %s", backendName)
+				} else {
+					log.Printf("  BackendName variant conversion failed: %T", backendVariant.Value())
 				}
+			} else {
+				log.Printf("  No BackendName property found")
 			}
 		}
 
+		// Use a default display name if none found
+		if displayName == "" {
+			displayName = fmt.Sprintf("Calendar_%s", strings.Split(string(objectPath), "_")[len(strings.Split(string(objectPath), "_"))-1])
+		}
+		
 		calendar := CalendarSource{
 			ID:          string(objectPath),
 			DisplayName: displayName,
@@ -121,7 +153,7 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 			Color:       "#3366cc", // Default color, could be retrieved from EDS
 		}
 		
-		log.Printf("Adding calendar: %s (enabled: %t, backend: %s)", displayName, enabled, backend)
+		log.Printf("✅ Adding calendar: '%s' (ID: %s, enabled: %t, backend: %s)", displayName, string(objectPath), enabled, backend)
 		calendars = append(calendars, calendar)
 	}
 

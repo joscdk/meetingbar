@@ -111,15 +111,22 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 		var displayName string
 		var enabled bool = true // Default to enabled if property not found
 		
-		if displayNameVariant, ok := sourceInterface["DisplayName"]; ok {
-			if name, ok := displayNameVariant.Value().(string); ok {
-				displayName = name
-				log.Printf("  DisplayName: %s", name)
-			} else {
-				log.Printf("  DisplayName variant conversion failed: %T", displayNameVariant.Value())
+		// Try multiple property names for display name
+		displayNameProperties := []string{"DisplayName", "display-name", "Name", "name", "Title", "title"}
+		for _, propName := range displayNameProperties {
+			if displayNameVariant, ok := sourceInterface[propName]; ok {
+				if name, ok := displayNameVariant.Value().(string); ok {
+					displayName = name
+					log.Printf("  Found display name via '%s': %s", propName, name)
+					break
+				} else {
+					log.Printf("  Property '%s' variant conversion failed: %T", propName, displayNameVariant.Value())
+				}
 			}
-		} else {
-			log.Printf("  No DisplayName property found")
+		}
+		
+		if displayName == "" {
+			log.Printf("  No display name found in any of: %v", displayNameProperties)
 		}
 		
 		if enabledVariant, ok := sourceInterface["Enabled"]; ok {
@@ -151,8 +158,20 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 
 		// Use a default display name if none found
 		if displayName == "" {
-			displayName = fmt.Sprintf("Calendar_%s", strings.Split(string(objectPath), "_")[len(strings.Split(string(objectPath), "_"))-1])
-			log.Printf("  Using default display name: %s", displayName)
+			// Try to use UID property as fallback
+			if uidVariant, ok := sourceInterface["UID"]; ok {
+				if uid, ok := uidVariant.Value().(string); ok {
+					displayName = fmt.Sprintf("Calendar (%s)", uid)
+					log.Printf("  Using UID as display name: %s", displayName)
+				}
+			}
+			
+			// Final fallback to object path
+			if displayName == "" {
+				pathParts := strings.Split(string(objectPath), "/")
+				displayName = fmt.Sprintf("Calendar (%s)", pathParts[len(pathParts)-1])
+				log.Printf("  Using object path as display name: %s", displayName)
+			}
 		}
 		
 		calendar := CalendarSource{

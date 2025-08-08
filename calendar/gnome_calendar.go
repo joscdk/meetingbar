@@ -125,8 +125,27 @@ func (g *GnomeCalendarService) GetCalendars() ([]CalendarSource, error) {
 			}
 		}
 		
+		// If no direct DisplayName found, try parsing it from the Data field
 		if displayName == "" {
-			log.Printf("  No display name found in any of: %v", displayNameProperties)
+			if dataVariant, ok := sourceInterface["Data"]; ok {
+				if dataStr, ok := dataVariant.Value().(string); ok {
+					log.Printf("  Parsing Data field for DisplayName")
+					// Parse the Data field which is in .ini format
+					lines := strings.Split(dataStr, "\n")
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						if strings.HasPrefix(line, "DisplayName=") {
+							displayName = strings.TrimPrefix(line, "DisplayName=")
+							log.Printf("  Found DisplayName in Data field: %s", displayName)
+							break
+						}
+					}
+				}
+			}
+		}
+		
+		if displayName == "" {
+			log.Printf("  No display name found in any of: %v or Data field", displayNameProperties)
 		}
 		
 		if enabledVariant, ok := sourceInterface["Enabled"]; ok {

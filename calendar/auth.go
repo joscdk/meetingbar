@@ -176,6 +176,19 @@ func GetClientForAccount(ctx context.Context, accountID string) (*http.Client, e
 		return nil, fmt.Errorf("failed to get token for account %s: %w", accountID, err)
 	}
 
+	// Ensure OAuth2 config is properly initialized with stored credentials
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+	
+	if cfg.OAuth2.ClientID == "" || cfg.OAuth2.ClientSecret == "" {
+		return nil, fmt.Errorf("OAuth2 credentials not configured")
+	}
+	
+	oauth2Config.ClientID = cfg.OAuth2.ClientID
+	oauth2Config.ClientSecret = cfg.OAuth2.ClientSecret
+
 	// Create token source that automatically refreshes
 	tokenSource := oauth2Config.TokenSource(ctx, token)
 	

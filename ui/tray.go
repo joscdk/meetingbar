@@ -23,7 +23,7 @@ type TrayManager struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	notificationMgr *NotificationManager
-	settingsMgr     *WebSettingsManager
+	settingsMgr     *NativeSettingsManager
 	
 	// Menu items
 	titleItem         *systray.MenuItem
@@ -51,8 +51,12 @@ func OnReady(cfg *config.Config) {
 		ctx:             ctx,
 		cancel:          cancel,
 		notificationMgr: NewNotificationManager(cfg),
-		settingsMgr:     NewWebSettingsManager(cfg, ctx),
 	}
+	
+	// Set up settings manager with refresh callback
+	trayManager.settingsMgr = NewNativeSettingsManager(cfg, ctx, func() {
+		trayManager.refreshMeetings()
+	})
 	
 	trayManager.setupTray()
 	trayManager.startPeriodicRefresh()
@@ -135,6 +139,7 @@ func (tm *TrayManager) handleMenuClicks() {
 				go tm.refreshMeetings()
 				
 			case <-tm.settingsItem.ClickedCh:
+				log.Printf("Settings item clicked!")
 				go tm.openSettings()
 				
 			case <-tm.rateItem.ClickedCh:
@@ -244,8 +249,10 @@ func (tm *TrayManager) refreshMeetings() {
 			if len(tm.config.EnabledCalendars) == 0 {
 				calendars, err := tm.calendarService.GetCalendars(account.ID)
 				if err != nil {
-					log.Printf("Failed to get calendars for account %s: %v", account.Email, err)
-					continue
+					log.Printf("OAUTH ERROR - Failed to get calendars for account %s: %v", account.Email, err)
+					// This suggests credentials are lost - try to handle gracefully
+					tm.updateTrayForNoAccounts()
+					return
 				}
 				for _, cal := range calendars {
 					enabledCalendars = append(enabledCalendars, cal.ID)
@@ -649,15 +656,13 @@ func (tm *TrayManager) formatMeetingDisplay(template string, meeting *calendar.M
 }
 
 func (tm *TrayManager) openSettings() {
-	go func() {
-		if err := tm.settingsMgr.ShowSettings(); err != nil {
-			log.Printf("Settings error: %v", err)
-		}
-		// Reload the calendar service in case backend changed
-		tm.reloadCalendarService()
-		// Refresh meetings after settings might have changed
-		tm.refreshMeetings()
-	}()
+	log.Printf("Opening settings...")
+	if err := tm.settingsMgr.ShowSettings(); err != nil {
+		log.Printf("Settings error: %v", err)
+	} else {
+		log.Printf("Settings opened successfully")
+	}
+	// Note: Refresh callback is handled by the settings manager
 }
 
 func (tm *TrayManager) reloadCalendarService() {

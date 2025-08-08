@@ -1,0 +1,191 @@
+
+(meetingbar:179016): libayatana-appindicator-WARNING **: 08:05:30.499: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+2025/07/29 08:05:30 refreshMeetings: backend=gnome, requiresAuth=false, accountCount=0
+2025/07/29 08:05:30 Testing GNOME Calendar connection...
+2025/07/29 08:05:30 Found 27 managed objects from EDS
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_20 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_20 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_26 has interfaces: [org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_26 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_13 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_13 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_21 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_21 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_1 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_1 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_9 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_9 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_3 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_3 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_24 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_24 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_10 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_10 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_17 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_17 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_18 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_18 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_14 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_14 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_6 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_6 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_5 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_5 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_19 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_19 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_16 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_16 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_11 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_11 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_7 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_7 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_12 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_12 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_23 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_23 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_15 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_15 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_8 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_8 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_4 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_4 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_22 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_22 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_2 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_2 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_25 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_25 - no Calendar extension
+2025/07/29 08:05:30 === GNOME Calendar Discovery Summary ===
+2025/07/29 08:05:30 Total managed objects: 27
+2025/07/29 08:05:30 Objects with Source interface: 27
+2025/07/29 08:05:30 Objects with Calendar extension: 0
+2025/07/29 08:05:30 Potential calendars found: 0
+2025/07/29 08:05:30 Final calendars created: 0
+2025/07/29 08:05:30 ========================================
+2025/07/29 08:05:30 GNOME Calendar connection successful
+2025/07/29 08:05:30 Found 27 managed objects from EDS
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_26 has interfaces: [org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_26 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_6 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_6 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_24 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_24 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_9 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_9 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_16 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_16 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_13 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_13 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_4 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_4 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_21 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_21 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_17 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_17 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_12 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_12 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_5 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_5 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_18 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_18 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_11 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_11 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_20 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_20 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_10 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_10 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_19 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_19 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_22 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_22 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_25 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_25 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_2 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_2 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_1 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_1 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_7 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_7 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_3 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_3 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_15 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_15 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_8 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_8 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_23 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_23 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_14 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_14 - no Calendar extension
+2025/07/29 08:05:30 === GNOME Calendar Discovery Summary ===
+2025/07/29 08:05:30 Total managed objects: 27
+2025/07/29 08:05:30 Objects with Source interface: 27
+2025/07/29 08:05:30 Objects with Calendar extension: 0
+2025/07/29 08:05:30 Potential calendars found: 0
+2025/07/29 08:05:30 Final calendars created: 0
+2025/07/29 08:05:30 ========================================
+2025/07/29 08:05:30 Found 27 managed objects from EDS
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_22 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_22 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_2 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_2 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_8 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_8 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_4 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_4 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_5 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_5 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_6 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_6 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_21 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_21 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_12 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_12 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_13 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_13 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_7 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_7 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_18 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_18 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_26 has interfaces: [org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_26 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_14 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_14 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_15 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_15 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_19 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_19 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_24 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_24 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_9 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_9 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_25 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_25 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_1 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_1 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_17 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_17 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_3 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_3 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_23 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_23 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_10 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_10 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_16 has interfaces: [org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_16 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_20 has interfaces: [org.gnome.evolution.dataserver.Source org.gnome.evolution.dataserver.Source.Writable]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_20 - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source has interfaces: [org.gnome.evolution.dataserver.Source.OAuth2Support org.gnome.evolution.dataserver.Source.Writable org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source - no Calendar extension
+2025/07/29 08:05:30 Object /org/gnome/evolution/dataserver/SourceManager/Source_11 has interfaces: [org.gnome.evolution.dataserver.Source]
+2025/07/29 08:05:30 Skipping /org/gnome/evolution/dataserver/SourceManager/Source_11 - no Calendar extension
+2025/07/29 08:05:30 === GNOME Calendar Discovery Summary ===
+2025/07/29 08:05:30 Total managed objects: 27
+2025/07/29 08:05:30 Objects with Source interface: 27
+2025/07/29 08:05:30 Objects with Calendar extension: 0
+2025/07/29 08:05:30 Potential calendars found: 0
+2025/07/29 08:05:30 Final calendars created: 0
+2025/07/29 08:05:30 ========================================

@@ -32,8 +32,8 @@ type Config struct {
 }
 
 type OAuth2Config struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientID     string `mapstructure:"ClientID" json:"ClientID"`
+	ClientSecret string `mapstructure:"ClientSecret" json:"ClientSecret"`
 }
 
 type Account struct {
